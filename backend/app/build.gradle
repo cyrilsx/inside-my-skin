@@ -10,6 +10,8 @@ dependencies {
     implementation project(':backend:core-domain')
     implementation project(':backend:ingestion')
     implementation project(':backend:api')
+    implementation project(':backend:companion-api')
+    implementation project(':backend:insights')
     implementation project(':backend:providers:withings')
     implementation project(':backend:providers:garmin')
 

@@ -3,9 +3,13 @@ package dev.healthhub.ingestion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.healthhub.core.ActivityRecord;
 import dev.healthhub.core.Measurement;
+import dev.healthhub.core.MentalSessionRecord;
 import dev.healthhub.core.MetricType;
+import dev.healthhub.core.MoodCheckinRecord;
 import dev.healthhub.core.Source;
+import dev.healthhub.core.UsageDailyRecord;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -20,7 +24,7 @@ import org.junit.jupiter.api.Test;
 class IngestionServiceTest {
 
     private InMemoryRawEventStore rawEventStore;
-    private InMemoryMeasurementStore measurementStore;
+    private InMemoryWritePort writePort;
     private IngestionService service;
 
     private static final UUID CONNECTION = UUID.randomUUID();
@@ -58,38 +62,40 @@ class IngestionServiceTest {
         }
     }
 
-    static class InMemoryMeasurementStore implements MeasurementStore {
-        private final Map<String, Measurement> byKey = new HashMap<>();
+    static class InMemoryWritePort implements CanonicalWritePort {
+        final Map<String, Measurement> measurements = new HashMap<>();
 
         @Override
-        public Measurement upsert(Measurement measurement) {
-            byKey.put(key(measurement), measurement);
-            return measurement;
+        public void upsertMeasurement(Measurement measurement) {
+            measurements.put(measurement.connectionId() + "|" + measurement.providerRecordId() + "|" + measurement.metricType(), measurement);
         }
 
         @Override
-        public Optional<Measurement> findByNaturalKey(UUID connectionId, String providerRecordId, MetricType metricType) {
-            return Optional.ofNullable(byKey.get(key(connectionId, providerRecordId, metricType)));
+        public void upsertActivity(UUID connectionId, String providerRecordId, ActivityRecord record) {
         }
 
-        private static String key(Measurement m) {
-            return key(m.connectionId(), m.providerRecordId(), m.metricType());
+        @Override
+        public void upsertMentalSession(UUID connectionId, String providerRecordId, MentalSessionRecord record) {
         }
 
-        private static String key(UUID connectionId, String providerRecordId, MetricType metricType) {
-            return connectionId + "|" + providerRecordId + "|" + metricType;
+        @Override
+        public void upsertUsageDaily(UUID connectionId, String providerRecordId, UsageDailyRecord record) {
+        }
+
+        @Override
+        public void upsertMoodCheckin(UUID connectionId, String providerRecordId, MoodCheckinRecord record) {
         }
 
         int size() {
-            return byKey.size();
+            return measurements.size();
         }
     }
 
     @BeforeEach
     void setUp() {
         rawEventStore = new InMemoryRawEventStore();
-        measurementStore = new InMemoryMeasurementStore();
-        service = new IngestionService(rawEventStore, measurementStore, Clock.fixed(Instant.parse("2026-03-29T12:00:00Z"), ZoneOffset.UTC));
+        writePort = new InMemoryWritePort();
+        service = new IngestionService(rawEventStore, writePort, Clock.fixed(Instant.parse("2026-03-29T12:00:00Z"), ZoneOffset.UTC));
     }
 
     @Test
@@ -99,7 +105,7 @@ class IngestionServiceTest {
 
         assertEquals(IngestOutcome.ACCEPTED, result.outcome());
         assertEquals(1, rawEventStore.size());
-        assertEquals(1, measurementStore.size());
+        assertEquals(1, writePort.size());
         var stored = rawEventStore.findByNaturalKey(CONNECTION, "rec-1").orElseThrow();
         assertEquals("{\"raw\":true}", stored.payload());
     }
@@ -113,7 +119,7 @@ class IngestionServiceTest {
 
         assertEquals(IngestOutcome.DUPLICATE, replay.outcome());
         assertEquals(1, rawEventStore.size());
-        assertEquals(1, measurementStore.size());
+        assertEquals(1, writePort.size());
     }
 
     @Test
@@ -123,8 +129,8 @@ class IngestionServiceTest {
         service.ingestMeasurement(CONNECTION, "rec-1", Source.WITHINGS, MetricType.WEIGHT_KG,
                 72.9, OCCURRED, OFFSET, "{}");
 
-        assertEquals(1, measurementStore.size());
-        var stored = measurementStore.findByNaturalKey(CONNECTION, "rec-1", MetricType.WEIGHT_KG).orElseThrow();
+        assertEquals(1, writePort.size());
+        var stored = writePort.measurements.get(CONNECTION + "|rec-1|" + MetricType.WEIGHT_KG);
         assertEquals(72.9, stored.value());
         assertTrue(stored.zoneOffsetAtCapture().equals(OFFSET));
     }
@@ -136,6 +142,6 @@ class IngestionServiceTest {
 
         assertEquals(IngestOutcome.ACCEPTED, other.outcome());
         assertEquals(2, rawEventStore.size());
-        assertEquals(2, measurementStore.size());
+        assertEquals(2, writePort.size());
     }
 }

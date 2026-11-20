@@ -3,6 +3,7 @@ description = 'Canonical REST + SSE, OpenAPI'
 dependencies {
     api project(':backend:core-domain')
     implementation project(':backend:ingestion')
+    implementation project(':backend:insights')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'

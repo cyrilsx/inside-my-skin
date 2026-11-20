@@ -11,6 +11,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,7 +42,13 @@ public class SecurityConfig {
     @Bean
     @ConditionalOnProperty(name = "JWT_SIGNING_KEY")
     JwtDecoder jwtDecoder(@Value("${JWT_SIGNING_KEY}") String signingKey) {
-        var key = new SecretKeySpec(signingKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(key).build();
+        var keyBytes = java.util.Base64.getDecoder().decode(signingKey);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("JWT_SIGNING_KEY must be a base64-encoded key of at least 256 bits");
+        }
+        var key = new SecretKeySpec(keyBytes, "HmacSHA256");
+        return NimbusJwtDecoder.withSecretKey(key)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
     }
 }
