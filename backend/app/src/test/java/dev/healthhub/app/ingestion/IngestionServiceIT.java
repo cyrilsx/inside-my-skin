@@ -13,8 +13,10 @@ import dev.healthhub.core.Source;
 import dev.healthhub.ingestion.IngestOutcome;
 import dev.healthhub.ingestion.IngestionService;
 import dev.healthhub.ingestion.MeasurementStore;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -38,6 +42,13 @@ class IngestionServiceIT {
 
     @MockitoBean
     JwtDecoder jwtDecoder;
+
+    @DynamicPropertySource
+    static void securityProps(DynamicPropertyRegistry registry) {
+        var keyBytes = new byte[32];
+        new SecureRandom().nextBytes(keyBytes);
+        registry.add("TOKEN_ENCRYPTION_KEY", () -> Base64.getEncoder().encodeToString(keyBytes));
+    }
 
     @Autowired
     IngestionService ingestionService;
