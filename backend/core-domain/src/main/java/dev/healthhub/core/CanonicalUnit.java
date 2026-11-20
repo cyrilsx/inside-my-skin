@@ -6,5 +6,6 @@ public enum CanonicalUnit {
     KILOGRAM,
     SECOND,
     BEATS_PER_MINUTE,
-    SCORE
+    SCORE,
+    PASCAL
 }

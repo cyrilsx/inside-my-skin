@@ -9,6 +9,8 @@ public enum MetricType {
     HRV_RMSSD_S(CanonicalUnit.SECOND),
     STRESS_SCORE(CanonicalUnit.SCORE),
     WEIGHT_KG(CanonicalUnit.KILOGRAM),
+    SYSTOLIC_BP_PA(CanonicalUnit.PASCAL),
+    DIASTOLIC_BP_PA(CanonicalUnit.PASCAL),
     SCREEN_TIME_S(CanonicalUnit.SECOND);
 
     private final CanonicalUnit canonicalUnit;

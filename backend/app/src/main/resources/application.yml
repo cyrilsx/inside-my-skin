@@ -26,3 +26,16 @@ management:
 springdoc:
   swagger-ui:
     url: /openapi.yaml
+
+healthhub:
+  webhook:
+    secret: ${WEBHOOK_SECRET:}
+  withings:
+    enabled: ${WITHINGS_ENABLED:false}
+    client-id: ${WITHINGS_CLIENT_ID:}
+    client-secret: ${WITHINGS_CLIENT_SECRET:}
+    callback-secret: ${WITHINGS_CALLBACK_SECRET:}
+    redirect-uri: ${WITHINGS_REDIRECT_URI:http://localhost:8080/connect/withings/callback}
+    base-url: ${WITHINGS_BASE_URL:https://wbs.withings.net}
+    authorize-url: ${WITHINGS_AUTHORIZE_URL:https://account.withings.com/oauth2_user/authorize2}
+    scope: ${WITHINGS_SCOPE:user.info,user.metrics,user.activity}

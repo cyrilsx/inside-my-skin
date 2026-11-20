@@ -1,0 +1,37 @@
+{
+  "_synthetic": true,
+  "note": "Synthetic fixture shaped like the vendor getmeas response: measuregrps with epoch date, timezone offset in seconds, and measures as value*10^unit. Replace with a real recorded response when credentials exist.",
+  "status": 0,
+  "body": {
+    "updatetime": 1774771200,
+    "measuregrps": [
+      {
+        "grpid": 900000001,
+        "attrib": 0,
+        "date": 1774681200,
+        "created": 1774681260,
+        "category": 1,
+        "deviceid": "synthetic-scale-01",
+        "timezone": 7200,
+        "measures": [
+          { "value": 725, "type": 1, "unit": -1 },
+          { "value": 118, "type": 5, "unit": 0 },
+          { "value": 76, "type": 6, "unit": 0 },
+          { "value": 58, "type": 8, "unit": 0 }
+        ]
+      },
+      {
+        "grpid": 900000002,
+        "attrib": 0,
+        "date": 1774594800,
+        "created": 1774594860,
+        "category": 1,
+        "deviceid": "synthetic-scale-01",
+        "timezone": 7200,
+        "measures": [
+          { "value": 728, "type": 1, "unit": -1 }
+        ]
+      }
+    ]
+  }
+}

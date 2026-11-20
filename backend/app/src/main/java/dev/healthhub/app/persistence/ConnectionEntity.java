@@ -25,6 +25,27 @@ public class ConnectionEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "encrypted_access_token")
+    private String encryptedAccessToken;
+
+    @Column(name = "encrypted_refresh_token")
+    private String encryptedRefreshToken;
+
+    @Column(name = "token_expires_at")
+    private Instant tokenExpiresAt;
+
+    @Column(name = "scope")
+    private String scope;
+
+    @Column(name = "external_user_id")
+    private String externalUserId;
+
+    @Column(name = "last_sync_at")
+    private Instant lastSyncAt;
+
+    @Column(name = "last_sync_status")
+    private String lastSyncStatus;
+
     protected ConnectionEntity() {
     }
 
@@ -54,5 +75,65 @@ public class ConnectionEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getEncryptedAccessToken() {
+        return encryptedAccessToken;
+    }
+
+    public void setEncryptedAccessToken(String encryptedAccessToken) {
+        this.encryptedAccessToken = encryptedAccessToken;
+    }
+
+    public String getEncryptedRefreshToken() {
+        return encryptedRefreshToken;
+    }
+
+    public void setEncryptedRefreshToken(String encryptedRefreshToken) {
+        this.encryptedRefreshToken = encryptedRefreshToken;
+    }
+
+    public Instant getTokenExpiresAt() {
+        return tokenExpiresAt;
+    }
+
+    public void setTokenExpiresAt(Instant tokenExpiresAt) {
+        this.tokenExpiresAt = tokenExpiresAt;
+    }
+
+    public String getScope() {
+        return scope;
+    }
+
+    public void setScope(String scope) {
+        this.scope = scope;
+    }
+
+    public String getExternalUserId() {
+        return externalUserId;
+    }
+
+    public void setExternalUserId(String externalUserId) {
+        this.externalUserId = externalUserId;
+    }
+
+    public Instant getLastSyncAt() {
+        return lastSyncAt;
+    }
+
+    public void setLastSyncAt(Instant lastSyncAt) {
+        this.lastSyncAt = lastSyncAt;
+    }
+
+    public String getLastSyncStatus() {
+        return lastSyncStatus;
+    }
+
+    public void setLastSyncStatus(String lastSyncStatus) {
+        this.lastSyncStatus = lastSyncStatus;
     }
 }

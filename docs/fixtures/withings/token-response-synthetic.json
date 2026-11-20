@@ -1,0 +1,13 @@
+{
+  "_synthetic": true,
+  "note": "Synthetic fixture shaped like the vendor token response. Replace with a real recorded response scrubbed of tokens when credentials exist.",
+  "status": 0,
+  "body": {
+    "access_token": "synthetic-access-token",
+    "refresh_token": "synthetic-refresh-token",
+    "expires_in": 10800,
+    "scope": "user.info,user.metrics",
+    "token_type": "Bearer",
+    "userid": "12345678"
+  }
+}

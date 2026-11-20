@@ -1,0 +1,8 @@
+{
+  "_synthetic": true,
+  "note": "Synthetic fixture shaped like the vendor webhook notify body. Replace with a real recorded notification when credentials exist.",
+  "userid": "12345678",
+  "category": 1,
+  "startdate": 1774681200,
+  "enddate": 1774771200
+}

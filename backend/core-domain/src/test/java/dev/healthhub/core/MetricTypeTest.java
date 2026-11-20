@@ -20,6 +20,12 @@ class MetricTypeTest {
     }
 
     @Test
+    void pressureIsCanonicalPascals() {
+        assertEquals(CanonicalUnit.PASCAL, MetricType.SYSTOLIC_BP_PA.canonicalUnit());
+        assertEquals(CanonicalUnit.PASCAL, MetricType.DIASTOLIC_BP_PA.canonicalUnit());
+    }
+
+    @Test
     void countsAndRatesAreDimensionlessOrPerTime() {
         assertEquals(CanonicalUnit.COUNT, MetricType.STEPS.canonicalUnit());
         assertEquals(CanonicalUnit.BEATS_PER_MINUTE, MetricType.HEART_RATE_BPM.canonicalUnit());

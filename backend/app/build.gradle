@@ -9,6 +9,8 @@ dependencies {
 
     implementation project(':backend:core-domain')
     implementation project(':backend:ingestion')
+    implementation project(':backend:api')
+    implementation project(':backend:providers:withings')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

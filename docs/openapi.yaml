@@ -23,7 +23,132 @@ tags:
   - name: export
   - name: data
   - name: companion
+  - name: connections
+  - name: webhooks
 paths:
+  /connections:
+    get:
+      tags: [connections]
+      summary: List data source connections and their consent/sync state
+      operationId: listConnections
+      responses:
+        '200':
+          description: All connections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /connections/{provider}/authorize:
+    get:
+      tags: [connections]
+      summary: Start OAuth for a provider; returns the vendor authorization URL to redirect to
+      operationId: startAuthorization
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Provider' }
+      responses:
+        '200':
+          description: Authorization URL and opaque state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationInit'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /connections/{provider}/callback:
+    get:
+      tags: [connections]
+      summary: OAuth redirect target; exchanges the code and stores encrypted tokens
+      operationId: handleCallback
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Provider' }
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Connection established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /connections/{id}/sync:
+    post:
+      tags: [connections]
+      summary: Trigger a delta sync for a connection now
+      operationId: syncConnection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Sync result; replays are no-ops
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResult'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /connections/{id}:
+    delete:
+      tags: [connections]
+      summary: Revoke a connection and delete its stored tokens
+      operationId: revokeConnection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Connection revoked
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /webhooks/{provider}:
+    post:
+      tags: [webhooks]
+      summary: Vendor webhook receiver; authenticated by our webhook secret header, not by JWT
+      operationId: receiveWebhook
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Provider' }
+        - name: X-Webhook-Secret
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEvent'
+      responses:
+        '202':
+          description: Webhook accepted, delta sync scheduled
+        '401':
+          description: Missing or invalid webhook secret
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /dailies:
     get:
       tags: [dailies]
@@ -204,6 +329,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    webhookSecret:
+      type: apiKey
+      in: header
+      name: X-Webhook-Secret
   parameters:
     from:
       name: from
@@ -238,6 +367,10 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    Provider:
+      type: string
+      description: Provider identifier used in connection management paths
+      enum: [withings, garmin]
     Source:
       type: string
       description: Canonical data source label
@@ -550,6 +683,52 @@ components:
         results:
           type: array
           items: { $ref: '#/components/schemas/IngestItemResult' }
+    Connection:
+      type: object
+      required: [id, provider, connectedAt]
+      properties:
+        id: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/Provider' }
+        label: { type: string, nullable: true }
+        connectedAt:
+          type: string
+          format: date-time
+        lastSyncAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSyncStatus:
+          type: string
+          nullable: true
+          enum: [OK, FAILED]
+    ConnectionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Connection' }
+    AuthorizationInit:
+      type: object
+      required: [authorizationUrl, state]
+      properties:
+        authorizationUrl: { type: string, format: uri }
+        state: { type: string }
+    SyncResult:
+      type: object
+      required: [connectionId, fetched, ingested, duplicates, finishedAt]
+      properties:
+        connectionId: { type: string, format: uuid }
+        fetched: { type: integer, minimum: 0 }
+        ingested: { type: integer, minimum: 0 }
+        duplicates: { type: integer, minimum: 0 }
+        finishedAt:
+          type: string
+          format: date-time
+    WebhookEvent:
+      type: object
+      description: Vendor webhook notification; vendor-specific fields pass through
+      additionalProperties: true
     Problem:
       type: object
       description: RFC 9457 Problem Details
