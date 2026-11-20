@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate:api": "openapi-ts",
+    "predev": "npm run generate:api",
+    "prebuild": "npm run generate:api",
+    "pretest": "npm run generate:api",
     "build": "vue-tsc -b && vite build",
     "test": "vitest run",
     "preview": "vite preview"
@@ -17,6 +21,7 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "^0.99.0",
     "@types/node": "^22.15.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/test-utils": "^2.4.6",

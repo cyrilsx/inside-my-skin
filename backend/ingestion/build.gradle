@@ -1,1 +1,5 @@
 description = 'Idempotent pipeline, raw events'
+
+dependencies {
+    api project(':backend:core-domain')
+}

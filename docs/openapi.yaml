@@ -1,0 +1,562 @@
+openapi: 3.1.0
+info:
+  title: HealthHub API
+  version: 1.0.0
+  description: |
+    Canonical API for HealthHub, a personal health and wellbeing aggregation platform.
+    This file is the single source of truth for request and response shapes; all clients
+    are generated from it. Timestamps are ISO 8601 with the original zone offset at capture
+    and are stored as UTC instants server-side. Values use canonical units (meters, kilograms,
+    seconds, plus dimensionless counts, scores, and rates). Mental wellbeing data is
+    descriptive only. All errors are RFC 9457 Problem Details.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: dailies
+  - name: series
+  - name: activities
+  - name: mental
+  - name: mood
+  - name: events
+  - name: export
+  - name: data
+  - name: companion
+paths:
+  /dailies:
+    get:
+      tags: [dailies]
+      summary: One row per day, all sources merged
+      operationId: getDailies
+      parameters:
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+      responses:
+        '200':
+          description: Daily rollups in the range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /series/{metricType}:
+    get:
+      tags: [series]
+      summary: Time series for one metric, segmented by source
+      operationId: getSeries
+      parameters:
+        - name: metricType
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/MetricType' }
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+      responses:
+        '200':
+          description: Points in the range, ordered by time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Series'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /activities:
+    get:
+      tags: [activities]
+      summary: Sport sessions and manual activity entries
+      operationId: listActivities
+      parameters:
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+      responses:
+        '200':
+          description: Activities in the range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /mental/sessions:
+    get:
+      tags: [mental]
+      summary: Meditation, breathing, and movement sessions
+      operationId: listMentalSessions
+      parameters:
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+      responses:
+        '200':
+          description: Mental wellbeing sessions in the range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentalSessionList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /mental/usage/daily:
+    get:
+      tags: [mental]
+      summary: Daily screen time, per app
+      operationId: listUsageDaily
+      parameters:
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+      responses:
+        '200':
+          description: Daily usage rows in the range; values are estimates from the device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageDailyList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /mood/checkins:
+    get:
+      tags: [mood]
+      summary: Mood check-ins (valence, labels, optional note)
+      operationId: listMoodCheckins
+      parameters:
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+      responses:
+        '200':
+          description: Mood check-ins in the range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodCheckinList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /events/stream:
+    get:
+      tags: [events]
+      summary: Server-sent events for live updates
+      operationId: streamEvents
+      responses:
+        '200':
+          description: Event stream; each event is one canonical change
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /export:
+    get:
+      tags: [export]
+      summary: Full export of all canonical data
+      operationId: exportData
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+      responses:
+        '200':
+          description: The export in the requested format
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+            text/csv:
+              schema:
+                type: string
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /data:
+    delete:
+      tags: [data]
+      summary: Async deletion of all data and tokens, with a completion event
+      operationId: deleteAllData
+      responses:
+        '202':
+          description: Deletion accepted and running asynchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionJob'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /companion/ingest:
+    post:
+      tags: [companion]
+      summary: Batch upload from the companion app; replay-safe by clientId
+      operationId: ingestBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestBatch'
+      responses:
+        '202':
+          description: Batch accepted; per-item results report duplicates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResult'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    from:
+      name: from
+      in: query
+      required: true
+      description: Inclusive start, ISO 8601 date or date-time
+      schema:
+        type: string
+        format: date-time
+    to:
+      name: to
+      in: query
+      required: true
+      description: Inclusive end, ISO 8601 date or date-time
+      schema:
+        type: string
+        format: date-time
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ValidationError:
+      description: Invalid request parameters or body
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Source:
+      type: string
+      description: Canonical data source label
+      enum: [GARMIN, WITHINGS, HEALTH_CONNECT, MANUAL]
+    MetricType:
+      type: string
+      enum:
+        - STEPS
+        - DISTANCE_M
+        - SLEEP_SECONDS
+        - HEART_RATE_BPM
+        - RESTING_HEART_RATE_BPM
+        - HRV_RMSSD_S
+        - STRESS_SCORE
+        - WEIGHT_KG
+        - SCREEN_TIME_S
+    CanonicalUnit:
+      type: string
+      description: Canonical unit of a value
+      enum: [COUNT, METER, KILOGRAM, SECOND, BEATS_PER_MINUTE, SCORE]
+    ActivityType:
+      type: string
+      enum: [WALKING, RUNNING, CYCLING, SWIMMING, STRENGTH, YOGA, OTHER]
+    MentalSessionKind:
+      type: string
+      enum: [MEDITATION, BREATHING, MOVEMENT]
+    Timestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 instant with the original zone offset at capture, e.g. 2026-03-29T07:30:00+02:00
+      examples: ['2026-03-29T07:30:00+02:00']
+    Measurement:
+      type: object
+      required: [id, source, metricType, value, unit, occurredAt, zoneOffset, receivedAt]
+      properties:
+        id: { type: string, format: uuid }
+        source: { $ref: '#/components/schemas/Source' }
+        metricType: { $ref: '#/components/schemas/MetricType' }
+        value: { type: number, format: double }
+        unit: { $ref: '#/components/schemas/CanonicalUnit' }
+        occurredAt: { $ref: '#/components/schemas/Timestamp' }
+        zoneOffset:
+          type: string
+          description: Original zone offset at capture, e.g. +02:00
+          examples: ['+02:00']
+        receivedAt:
+          type: string
+          format: date-time
+          description: When the record was received, in UTC
+    Daily:
+      type: object
+      required: [date, sources]
+      properties:
+        date: { type: string, format: date }
+        sources:
+          type: array
+          items: { $ref: '#/components/schemas/Source' }
+        steps: { type: integer, nullable: true }
+        distanceM: { type: number, format: double, nullable: true }
+        sleepSeconds: { type: integer, nullable: true }
+        restingHeartRateBpm: { type: number, format: double, nullable: true }
+        hrvRmssdS: { type: number, format: double, nullable: true }
+        stressScore: { type: number, format: double, nullable: true }
+        weightKg: { type: number, format: double, nullable: true }
+        screenTimeS: { type: integer, nullable: true }
+    DailyList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Daily' }
+    SeriesPoint:
+      type: object
+      required: [occurredAt, zoneOffset, value, unit, source]
+      properties:
+        occurredAt: { $ref: '#/components/schemas/Timestamp' }
+        zoneOffset: { type: string, examples: ['+01:00'] }
+        value: { type: number, format: double }
+        unit: { $ref: '#/components/schemas/CanonicalUnit' }
+        source: { $ref: '#/components/schemas/Source' }
+    Series:
+      type: object
+      required: [metricType, unit, points]
+      properties:
+        metricType: { $ref: '#/components/schemas/MetricType' }
+        unit: { $ref: '#/components/schemas/CanonicalUnit' }
+        points:
+          type: array
+          items: { $ref: '#/components/schemas/SeriesPoint' }
+    Activity:
+      type: object
+      required: [id, source, type, startedAt, durationS]
+      properties:
+        id: { type: string, format: uuid }
+        source: { $ref: '#/components/schemas/Source' }
+        type: { $ref: '#/components/schemas/ActivityType' }
+        title: { type: string, nullable: true }
+        startedAt: { $ref: '#/components/schemas/Timestamp' }
+        durationS: { type: integer, minimum: 0 }
+        distanceM: { type: number, format: double, nullable: true }
+        avgHeartRateBpm: { type: number, format: double, nullable: true }
+    ActivityList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Activity' }
+    MentalSession:
+      type: object
+      required: [id, source, kind, startedAt, durationS]
+      properties:
+        id: { type: string, format: uuid }
+        source: { $ref: '#/components/schemas/Source' }
+        kind: { $ref: '#/components/schemas/MentalSessionKind' }
+        startedAt: { $ref: '#/components/schemas/Timestamp' }
+        durationS: { type: integer, minimum: 0 }
+    MentalSessionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MentalSession' }
+    UsageDaily:
+      type: object
+      required: [date, totalScreenTimeS, isEstimate, perApp]
+      properties:
+        date: { type: string, format: date }
+        totalScreenTimeS:
+          type: integer
+          minimum: 0
+        isEstimate:
+          type: boolean
+          description: Screen time is an estimate reported by the device
+        perApp:
+          type: array
+          items:
+            type: object
+            required: [app, foregroundS]
+            properties:
+              app: { type: string, description: Package name of the app }
+              foregroundS: { type: integer, minimum: 0 }
+    UsageDailyList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/UsageDaily' }
+    MoodCheckin:
+      type: object
+      required: [id, occurredAt, valence, labels]
+      properties:
+        id: { type: string, format: uuid }
+        occurredAt: { $ref: '#/components/schemas/Timestamp' }
+        valence:
+          type: number
+          format: double
+          minimum: -1
+          maximum: 1
+        labels:
+          type: array
+          items: { type: string }
+        note: { type: string, nullable: true }
+    MoodCheckinList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MoodCheckin' }
+    Event:
+      type: object
+      description: One server-sent event
+      required: [id, type, occurredAt, payload]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [MEASUREMENT, ACTIVITY, MENTAL_SESSION, USAGE_DAILY, MOOD_CHECKIN, SYNC, DELETION]
+        occurredAt:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          additionalProperties: true
+    DeletionJob:
+      type: object
+      required: [id, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [PENDING, RUNNING, COMPLETED, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+    IngestBatch:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items: { $ref: '#/components/schemas/IngestItem' }
+    IngestItem:
+      oneOf:
+        - $ref: '#/components/schemas/IngestMeasurement'
+        - $ref: '#/components/schemas/IngestActivity'
+        - $ref: '#/components/schemas/IngestMentalSession'
+        - $ref: '#/components/schemas/IngestUsageDaily'
+        - $ref: '#/components/schemas/IngestMoodCheckin'
+      discriminator:
+        propertyName: kind
+        mapping:
+          MEASUREMENT: '#/components/schemas/IngestMeasurement'
+          ACTIVITY: '#/components/schemas/IngestActivity'
+          MENTAL_SESSION: '#/components/schemas/IngestMentalSession'
+          USAGE_DAILY: '#/components/schemas/IngestUsageDaily'
+          MOOD_CHECKIN: '#/components/schemas/IngestMoodCheckin'
+    IngestMeasurement:
+      type: object
+      required: [kind, clientId, metricType, value, occurredAt, zoneOffset]
+      properties:
+        kind: { type: string, enum: [MEASUREMENT] }
+        clientId:
+          type: string
+          format: uuid
+          description: Client-generated idempotency key; replays are no-ops
+        metricType: { $ref: '#/components/schemas/MetricType' }
+        value: { type: number, format: double }
+        occurredAt: { $ref: '#/components/schemas/Timestamp' }
+        zoneOffset: { type: string, examples: ['+01:00'] }
+    IngestActivity:
+      type: object
+      required: [kind, clientId, type, startedAt, durationS]
+      properties:
+        kind: { type: string, enum: [ACTIVITY] }
+        clientId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/ActivityType' }
+        title: { type: string, nullable: true }
+        startedAt: { $ref: '#/components/schemas/Timestamp' }
+        durationS: { type: integer, minimum: 0 }
+        distanceM: { type: number, format: double, nullable: true }
+    IngestMentalSession:
+      type: object
+      required: [kind, clientId, sessionKind, startedAt, durationS]
+      properties:
+        kind: { type: string, enum: [MENTAL_SESSION] }
+        clientId: { type: string, format: uuid }
+        sessionKind: { $ref: '#/components/schemas/MentalSessionKind' }
+        startedAt: { $ref: '#/components/schemas/Timestamp' }
+        durationS: { type: integer, minimum: 0 }
+    IngestUsageDaily:
+      type: object
+      required: [kind, clientId, date, totalScreenTimeS, perApp]
+      properties:
+        kind: { type: string, enum: [USAGE_DAILY] }
+        clientId: { type: string, format: uuid }
+        date: { type: string, format: date }
+        totalScreenTimeS: { type: integer, minimum: 0 }
+        perApp:
+          type: array
+          items:
+            type: object
+            required: [app, foregroundS]
+            properties:
+              app: { type: string }
+              foregroundS: { type: integer, minimum: 0 }
+    IngestMoodCheckin:
+      type: object
+      required: [kind, clientId, occurredAt, valence, labels]
+      properties:
+        kind: { type: string, enum: [MOOD_CHECKIN] }
+        clientId: { type: string, format: uuid }
+        occurredAt: { $ref: '#/components/schemas/Timestamp' }
+        valence:
+          type: number
+          format: double
+          minimum: -1
+          maximum: 1
+        labels:
+          type: array
+          items: { type: string }
+        note: { type: string, nullable: true }
+    IngestItemResult:
+      type: object
+      required: [clientId, status]
+      properties:
+        clientId: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [ACCEPTED, DUPLICATE, REJECTED]
+        problem:
+          $ref: '#/components/schemas/Problem'
+    IngestResult:
+      type: object
+      required: [acceptedCount, duplicateCount, rejectedCount, results]
+      properties:
+        acceptedCount: { type: integer, minimum: 0 }
+        duplicateCount: { type: integer, minimum: 0 }
+        rejectedCount: { type: integer, minimum: 0 }
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/IngestItemResult' }
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri-reference, default: 'about:blank' }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }

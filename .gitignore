@@ -9,6 +9,7 @@ out/
 # Node / frontend
 node_modules/
 dist/
+frontend/src/api/generated/
 *.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
