@@ -82,7 +82,7 @@ class IngestionServiceIT {
                 connectionId, "rec-2", Source.WITHINGS, MetricType.WEIGHT_KG, 72.5, occurred, ZoneOffset.ofHours(2), "{\"raw\":true}");
 
         var stored = rawEventRepository.findByConnectionIdAndProviderRecordId(connectionId, "rec-2").orElseThrow();
-        assertEquals("{\"raw\":true}", stored.getPayload());
+        assertEquals("{\"raw\":true}", stored.getPayload().replace(" ", ""));
     }
 
     @Test
