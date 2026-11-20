@@ -128,7 +128,7 @@ Health and mental data is the most sensitive category you can store. This projec
 | M1 | OpenAPI contract, core domain, idempotent ingestion, security | Done |
 | M2 | Withings end to end (OAuth, webhooks, read API) | Done |
 | M3 | Garmin Personal API adapter and sync orchestration | Done |
-| M4 | Android companion app: Health Connect, usage stats, mood, upload | Not started |
+| M4 | Android companion app: Health Connect, usage stats, mood, upload | Done |
 | M5 | Vue dashboard: Today, Trends, Activities, Mental, Sources | Not started |
 | M6 | Insights, export, deletion, hexagonal boundary verification | Not started |
 

@@ -50,3 +50,19 @@ jobs:
       - name: Frontend type + build gate
         working-directory: frontend
         run: npm run build
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          sdk-version: '36'
+      - name: Android unit tests + debug APK
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug

@@ -4,6 +4,13 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "org.openapi.generator") {
+                useModule("org.openapitools:openapi-generator-gradle-plugin:${requested.version ?: "7.14.0"}")
+            }
+        }
+    }
 }
 
 dependencyResolutionManagement {
