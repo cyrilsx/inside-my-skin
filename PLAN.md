@@ -130,7 +130,7 @@ Health and mental data is the most sensitive category you can store. This projec
 | M3 | Garmin Personal API adapter and sync orchestration | Done |
 | M4 | Android companion app: Health Connect, usage stats, mood, upload | Done |
 | M5 | Vue dashboard: Today, Trends, Activities, Mental, Sources | Done |
-| M6 | Insights, export, deletion, hexagonal boundary verification | Not started |
+| M6 | Insights, export, deletion, hexagonal boundary verification | Done |
 
 Detailed, acceptance-criteria per task, is in the build plan for AI agents, alongside the decision records that lock the architecture.
 

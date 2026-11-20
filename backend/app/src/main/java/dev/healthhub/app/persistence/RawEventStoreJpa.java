@@ -40,6 +40,12 @@ public class RawEventStoreJpa implements RawEventStore {
         }
     }
 
+    @Override
+    @Transactional
+    public void deleteAll() {
+        repository.deleteAll();
+    }
+
     private static RawEvent toRecord(RawEventEntity entity) {
         return new RawEvent(entity.getId(), entity.getConnectionId(), entity.getProviderRecordId(),
                 entity.getPayload(), entity.getReceivedAt(), entity.isNormalized());

@@ -76,6 +76,16 @@ public class CanonicalWritePortJpa implements CanonicalWritePort {
                 record.valence(), writeJson(record.labels()), record.note()));
     }
 
+    @Override
+    @Transactional
+    public void deleteAll() {
+        measurementStore.deleteAll();
+        activityRepository.deleteAll();
+        mentalSessionRepository.deleteAll();
+        usageDailyRepository.deleteAll();
+        moodCheckinRepository.deleteAll();
+    }
+
     private String writeJson(Object value) {
         return objectMapper.writeValueAsString(value);
     }

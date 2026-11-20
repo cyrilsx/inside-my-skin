@@ -86,4 +86,47 @@ public final class Dtos {
 
     public record MoodCheckinListDto(List<MoodCheckinDto> items) {
     }
+
+    public record EventDto(
+            String id,
+            String type,
+            String occurredAt,
+            Object payload) {
+    }
+
+    public record DeletionJobDto(
+            UUID id,
+            String status,
+            String createdAt,
+            String completedAt) {
+    }
+
+    public record MeasurementDto(
+            String providerRecordId,
+            Source source,
+            String metricType,
+            double value,
+            String unit,
+            String occurredAt,
+            String zoneOffset,
+            String receivedAt) {
+    }
+
+    public record ConnectionDto(
+            UUID id,
+            String provider,
+            String label,
+            String connectedAt,
+            String lastSyncAt,
+            String lastSyncStatus) {
+    }
+
+    public record ExportDto(
+            List<MeasurementDto> measurements,
+            List<ActivityDto> activities,
+            List<MentalSessionDto> mentalSessions,
+            List<UsageDailyDto> usageDaily,
+            List<MoodCheckinDto> moodCheckins,
+            List<ConnectionDto> connections) {
+    }
 }

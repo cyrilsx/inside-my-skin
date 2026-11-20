@@ -14,6 +14,23 @@ async function connect(provider: 'withings' | 'garmin') {
     await store.connectProvider('garmin')
   }
 }
+
+async function exportData(format: 'json' | 'csv') {
+  const content = await store.exportData(format)
+  if (!content) return
+  const blob = new Blob([content], { type: format === 'csv' ? 'text/csv' : 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `healthhub-export.${format}`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+async function deleteAllData() {
+  if (!window.confirm('Delete all stored data and provider tokens? This runs asynchronously and cannot be undone.')) return
+  await store.deleteAllData()
+}
 </script>
 
 <template>
@@ -37,11 +54,16 @@ async function connect(provider: 'withings' | 'garmin') {
     <div class="actions">
       <button @click="connect('withings')">Connect Withings</button>
       <button @click="connect('garmin')">Connect Garmin</button>
+      <button @click="exportData('json')">Export JSON</button>
+      <button @click="exportData('csv')">Export CSV</button>
+      <button class="danger" @click="deleteAllData">Delete all data</button>
     </div>
     <p v-if="store.lastSync">Last sync: {{ store.lastSync.ingested }} ingested, {{ store.lastSync.duplicates }} duplicates.</p>
+    <p v-if="store.lastDeletionJob">Deletion job {{ store.lastDeletionJob.id }} accepted (status: {{ store.lastDeletionJob.status }}); completion arrives on the event stream.</p>
   </section>
 </template>
 
 <style scoped>
-.actions { display: flex; gap: 8px; margin-top: 12px; }
+.actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.danger { color: #b00020; }
 </style>

@@ -14,4 +14,6 @@ public interface MeasurementRepository extends JpaRepository<MeasurementEntity, 
 
     List<MeasurementEntity> findByMetricTypeAndOccurredAtBetweenOrderByOccurredAt(
             MetricType metricType, Instant from, Instant to);
+
+    List<MeasurementEntity> findAllByOrderByOccurredAtAsc();
 }

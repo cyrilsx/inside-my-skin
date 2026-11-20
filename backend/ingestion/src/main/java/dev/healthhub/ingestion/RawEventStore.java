@@ -8,4 +8,6 @@ public interface RawEventStore {
     Optional<RawEvent> findByNaturalKey(UUID connectionId, String providerRecordId);
 
     RawEvent saveIfAbsent(RawEvent event);
+
+    void deleteAll();
 }

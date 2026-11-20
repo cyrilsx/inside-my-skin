@@ -48,6 +48,11 @@ class ConnectionServiceTest {
         public void delete(UUID id) {
             byId.remove(id);
         }
+
+        @Override
+        public void deleteAll() {
+            byId.clear();
+        }
     }
 
     private static ProviderOAuthPort oauthPort(String provider) {
@@ -71,8 +76,16 @@ class ConnectionServiceTest {
 
     private ConnectionService serviceWith(FakeConnectionStore store, List<ProviderOAuthPort> oauthPorts) {
         return new ConnectionService(store, new NoopCredentialsPort(), oauthPorts, List.of(),
-                new SyncOrchestrator(List.of(), null, e -> {
-                }, store, Clock.systemUTC()));
+                new SyncOrchestrator(List.of(), null, new SyncAuditStore() {
+                    @Override
+                    public void record(SyncAuditEntry entry) {
+                    }
+
+                    @Override
+                    public void deleteAll() {
+                    }
+                }, store, e -> {
+                }, Clock.systemUTC()));
     }
 
     static class NoopCredentialsPort implements ConnectionCredentialsPort {

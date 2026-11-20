@@ -21,4 +21,10 @@ public class SyncAuditStoreJpa implements SyncAuditStore {
                 entry.finishedAt(), entry.status(), entry.fetched(), entry.ingested(), entry.duplicates(),
                 entry.error()));
     }
+
+    @Override
+    @Transactional
+    public void deleteAll() {
+        repository.deleteAll();
+    }
 }

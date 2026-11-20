@@ -13,7 +13,9 @@ import dev.healthhub.core.UsageDailyRecord;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,6 +27,7 @@ class IngestionServiceTest {
 
     private InMemoryRawEventStore rawEventStore;
     private InMemoryWritePort writePort;
+    private List<CanonicalEvent> publishedEvents;
     private IngestionService service;
 
     private static final UUID CONNECTION = UUID.randomUUID();
@@ -51,6 +54,11 @@ class IngestionServiceTest {
                     event.payload(), event.receivedAt(), event.normalized());
             byKey.put(key, saved);
             return saved;
+        }
+
+        @Override
+        public void deleteAll() {
+            byKey.clear();
         }
 
         private static String key(UUID connectionId, String providerRecordId) {
@@ -86,6 +94,11 @@ class IngestionServiceTest {
         public void upsertMoodCheckin(UUID connectionId, String providerRecordId, MoodCheckinRecord record) {
         }
 
+        @Override
+        public void deleteAll() {
+            measurements.clear();
+        }
+
         int size() {
             return measurements.size();
         }
@@ -95,7 +108,9 @@ class IngestionServiceTest {
     void setUp() {
         rawEventStore = new InMemoryRawEventStore();
         writePort = new InMemoryWritePort();
-        service = new IngestionService(rawEventStore, writePort, Clock.fixed(Instant.parse("2026-03-29T12:00:00Z"), ZoneOffset.UTC));
+        publishedEvents = new ArrayList<>();
+        service = new IngestionService(rawEventStore, writePort, publishedEvents::add,
+                Clock.fixed(Instant.parse("2026-03-29T12:00:00Z"), ZoneOffset.UTC));
     }
 
     @Test
@@ -143,5 +158,27 @@ class IngestionServiceTest {
         assertEquals(IngestOutcome.ACCEPTED, other.outcome());
         assertEquals(2, rawEventStore.size());
         assertEquals(2, writePort.size());
+    }
+
+    @Test
+    void acceptedIngestPublishesCanonicalEventWithTypeAndPayload() {
+        service.ingestMeasurement(CONNECTION, "rec-1", Source.GARMIN, MetricType.STEPS,
+                8421, OCCURRED, OFFSET, "{}");
+
+        assertEquals(1, publishedEvents.size());
+        var event = publishedEvents.getFirst();
+        assertEquals(EventType.MEASUREMENT, event.type());
+        assertEquals(Instant.parse("2026-03-29T12:00:00Z"), event.occurredAt());
+        var payload = (Measurement) event.payload();
+        assertEquals(8421, payload.value());
+        assertEquals(MetricType.STEPS, payload.metricType());
+    }
+
+    @Test
+    void duplicateReplayPublishesNoEvent() {
+        service.ingestMeasurement(CONNECTION, "rec-1", Source.GARMIN, MetricType.STEPS, 100, OCCURRED, OFFSET, "{}");
+        service.ingestMeasurement(CONNECTION, "rec-1", Source.GARMIN, MetricType.STEPS, 100, OCCURRED, OFFSET, "{}");
+
+        assertEquals(1, publishedEvents.size());
     }
 }

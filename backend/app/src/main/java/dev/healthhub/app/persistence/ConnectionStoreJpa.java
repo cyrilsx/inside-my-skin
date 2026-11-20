@@ -56,6 +56,12 @@ public class ConnectionStoreJpa implements ConnectionStore {
         repository.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public void deleteAll() {
+        repository.deleteAll();
+    }
+
     private static ConnectionInfo toInfo(ConnectionEntity entity) {
         return new ConnectionInfo(entity.getId(), entity.getProvider(), entity.getLabel(),
                 entity.getCreatedAt(), entity.getLastSyncAt(), entity.getLastSyncStatus());

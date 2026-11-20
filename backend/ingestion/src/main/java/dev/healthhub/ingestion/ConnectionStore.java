@@ -18,4 +18,6 @@ public interface ConnectionStore {
     void markSynced(UUID id, Instant finishedAt, String status);
 
     void delete(UUID id);
+
+    void deleteAll();
 }

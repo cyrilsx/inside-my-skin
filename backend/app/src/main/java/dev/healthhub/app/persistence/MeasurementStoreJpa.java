@@ -41,6 +41,12 @@ public class MeasurementStoreJpa implements MeasurementStore {
                 .map(MeasurementStoreJpa::toRecord);
     }
 
+    @Override
+    @Transactional
+    public void deleteAll() {
+        repository.deleteAll();
+    }
+
     private static Measurement toRecord(MeasurementEntity entity) {
         return new Measurement(entity.getConnectionId(), entity.getProviderRecordId(), entity.getSource(),
                 entity.getMetricType(), entity.getValue(), entity.getOccurredAt(),

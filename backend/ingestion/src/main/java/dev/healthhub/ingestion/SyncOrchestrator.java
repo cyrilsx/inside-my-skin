@@ -17,14 +17,17 @@ public class SyncOrchestrator {
     private final IngestionService ingestionService;
     private final SyncAuditStore auditStore;
     private final ConnectionStore connectionStore;
+    private final CanonicalEventPublisher eventPublisher;
     private final Clock clock;
 
     public SyncOrchestrator(List<ProviderSyncPort> syncPorts, IngestionService ingestionService,
-            SyncAuditStore auditStore, ConnectionStore connectionStore, Clock clock) {
+            SyncAuditStore auditStore, ConnectionStore connectionStore, CanonicalEventPublisher eventPublisher,
+            Clock clock) {
         this.syncPorts = syncPorts;
         this.ingestionService = ingestionService;
         this.auditStore = auditStore;
         this.connectionStore = connectionStore;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -53,15 +56,21 @@ public class SyncOrchestrator {
             }
             var finishedAt = Instant.now(clock);
             var syncResult = new SyncResult(connectionId, records.size(), ingested, duplicates, finishedAt);
-            auditStore.record(new SyncAuditEntry(connectionId, connection.provider(), startedAt, finishedAt,
-                    "OK", records.size(), ingested, duplicates, null));
+            var entry = new SyncAuditEntry(connectionId, connection.provider(), startedAt, finishedAt,
+                    "OK", records.size(), ingested, duplicates, null);
+            auditStore.record(entry);
+            eventPublisher.publish(new CanonicalEvent(
+                    UUID.randomUUID().toString(), EventType.SYNC, finishedAt, entry));
             connectionStore.markSynced(connectionId, finishedAt, "OK");
             return syncResult;
         } catch (Exception e) {
             var finishedAt = Instant.now(clock);
             log.error("Sync failed for connection {}", connectionId, e);
-            auditStore.record(new SyncAuditEntry(connectionId, connection.provider(), startedAt, finishedAt,
-                    "FAILED", 0, 0, 0, e.getMessage()));
+            var entry = new SyncAuditEntry(connectionId, connection.provider(), startedAt, finishedAt,
+                    "FAILED", 0, 0, 0, e.getMessage());
+            auditStore.record(entry);
+            eventPublisher.publish(new CanonicalEvent(
+                    UUID.randomUUID().toString(), EventType.SYNC, finishedAt, entry));
             connectionStore.markSynced(connectionId, finishedAt, "FAILED");
             throw e;
         }

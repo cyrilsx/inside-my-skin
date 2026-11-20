@@ -1,5 +1,6 @@
 package dev.healthhub.app.config;
 
+import dev.healthhub.ingestion.CanonicalEventPublisher;
 import dev.healthhub.ingestion.CanonicalWritePort;
 import dev.healthhub.ingestion.IngestionService;
 import dev.healthhub.ingestion.RawEventStore;
@@ -16,7 +17,8 @@ public class IngestionConfig {
     }
 
     @Bean
-    IngestionService ingestionService(RawEventStore rawEventStore, CanonicalWritePort writePort, Clock clock) {
-        return new IngestionService(rawEventStore, writePort, clock);
+    IngestionService ingestionService(RawEventStore rawEventStore, CanonicalWritePort writePort,
+            CanonicalEventPublisher eventPublisher, Clock clock) {
+        return new IngestionService(rawEventStore, writePort, eventPublisher, clock);
     }
 }

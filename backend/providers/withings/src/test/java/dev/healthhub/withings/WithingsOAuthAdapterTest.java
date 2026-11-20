@@ -73,6 +73,11 @@ class WithingsOAuthAdapterTest {
         public void delete(UUID id) {
             byId.remove(id);
         }
+
+        @Override
+        public void deleteAll() {
+            byId.clear();
+        }
     }
 
     static class FakeCredentialsPort implements ConnectionCredentialsPort {

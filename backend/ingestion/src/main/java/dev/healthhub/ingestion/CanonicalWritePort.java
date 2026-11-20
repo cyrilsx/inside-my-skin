@@ -18,4 +18,6 @@ public interface CanonicalWritePort {
     void upsertUsageDaily(UUID connectionId, String providerRecordId, UsageDailyRecord record);
 
     void upsertMoodCheckin(UUID connectionId, String providerRecordId, MoodCheckinRecord record);
+
+    void deleteAll();
 }
