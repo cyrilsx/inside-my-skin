@@ -1,5 +1,6 @@
 package dev.healthhub.ingestion;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,14 @@ public class ConnectionService {
 
     public AuthorizationInit startAuthorization(String provider) {
         return oauthPort(provider).startAuthorization();
+    }
+
+    public ConnectionInfo connect(String provider) {
+        var oauthBased = oauthPorts.stream().anyMatch(p -> p.provider().equals(provider));
+        if (oauthBased) {
+            throw new IllegalArgumentException("provider " + provider + " requires OAuth; use /authorize");
+        }
+        return connectionStore.saveNew(provider, provider, Instant.now());
     }
 
     public ConnectionInfo handleCallback(String provider, String code, String state) {

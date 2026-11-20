@@ -11,6 +11,7 @@ dependencies {
     implementation project(':backend:ingestion')
     implementation project(':backend:api')
     implementation project(':backend:providers:withings')
+    implementation project(':backend:providers:garmin')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

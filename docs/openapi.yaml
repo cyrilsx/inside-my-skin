@@ -58,6 +58,25 @@ paths:
                 $ref: '#/components/schemas/AuthorizationInit'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '422': { $ref: '#/components/responses/ValidationError' }
+  /connections/{provider}/connect:
+    post:
+      tags: [connections]
+      summary: Connect a key-based provider (no OAuth) using the server-side configured key
+      operationId: connectProvider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Provider' }
+      responses:
+        '200':
+          description: Connection created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /connections/{provider}/callback:
     get:
       tags: [connections]

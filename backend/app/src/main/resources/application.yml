@@ -30,6 +30,16 @@ springdoc:
 healthhub:
   webhook:
     secret: ${WEBHOOK_SECRET:}
+  sync:
+    enabled: ${SYNC_ENABLED:true}
+    interval-ms: ${SYNC_INTERVAL_MS:3600000}
+    initial-delay-ms: ${SYNC_INITIAL_DELAY_MS:60000}
+  garmin:
+    enabled: ${GARMIN_ENABLED:false}
+    personal-key: ${GARMIN_PERSONAL_KEY:}
+    key-header: ${GARMIN_KEY_HEADER:}
+    base-url: ${GARMIN_BASE_URL:https://connect.garmin.com}
+    user-id: ${GARMIN_USER_ID:}
   withings:
     enabled: ${WITHINGS_ENABLED:false}
     client-id: ${WITHINGS_CLIENT_ID:}

@@ -1,1 +1,14 @@
 description = 'Garmin adapter behind a port'
+
+dependencies {
+    api project(':backend:core-domain')
+    implementation project(':backend:ingestion')
+
+    implementation 'org.springframework.boot:spring-boot'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'org.springframework:spring-web'
+    implementation 'org.springframework:spring-context'
+    implementation 'tools.jackson.core:jackson-databind'
+
+    testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
+}

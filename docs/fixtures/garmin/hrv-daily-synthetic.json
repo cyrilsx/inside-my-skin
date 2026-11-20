@@ -1,0 +1,11 @@
+{
+  "_synthetic": true,
+  "note": "Synthetic fixture shaped like the vendor daily HRV response (RMSSD in milliseconds). Field names must be verified against a real scrubbed recording once GARMIN_PERSONAL_KEY exists (human gate).",
+  "hrvSummary": {
+    "calendarDate": "2026-03-29",
+    "lastHrv": {
+      "hrvValue": 45,
+      "startTimeGMT": 1774672800
+    }
+  }
+}

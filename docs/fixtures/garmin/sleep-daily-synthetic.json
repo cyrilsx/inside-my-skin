@@ -1,0 +1,14 @@
+{
+  "_synthetic": true,
+  "note": "Synthetic fixture shaped like the vendor daily sleep response. Field names must be verified against a real scrubbed recording once GARMIN_PERSONAL_KEY exists (human gate).",
+  "dailySleepDTO": {
+    "calendarDate": "2026-03-29",
+    "sleepTimeSeconds": 27000,
+    "deepSleepSeconds": 5400,
+    "lightSleepSeconds": 15000,
+    "remSleepSeconds": 4800,
+    "awakeSleepSeconds": 1800,
+    "sleepStartTimestampGMT": 1774672800,
+    "sleepEndTimestampGMT": 1774699800
+  }
+}

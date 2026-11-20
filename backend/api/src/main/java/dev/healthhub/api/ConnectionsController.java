@@ -41,6 +41,15 @@ public class ConnectionsController {
         }
     }
 
+    @PostMapping("/{provider}/connect")
+    public ConnectionInfo connect(@PathVariable String provider) {
+        try {
+            return connectionService.connect(provider);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage(), e);
+        }
+    }
+
     @GetMapping("/{provider}/callback")
     public ConnectionInfo callback(@PathVariable String provider,
             @RequestParam String code, @RequestParam String state) {
