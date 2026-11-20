@@ -1,0 +1,14 @@
+plugins {
+    id 'org.springframework.boot' version '4.1.0'
+}
+
+description = 'Assembly, configuration, security'
+
+dependencies {
+    implementation platform('org.springframework.boot:spring-boot-dependencies:4.1.0')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
