@@ -83,7 +83,8 @@ Prerequisites: JDK 25, Node 22, Docker, Android Studio (for the companion app).
 ```
 # backend
 docker compose up -d postgres
-./gradlew bootRun          # app + migrations + actuator on :8080
+./mvnw -pl backend/app -am package -DskipTests
+./mvnw -pl backend/app spring-boot:run   # app + migrations + actuator on :8080
 
 # frontend
 cd frontend && npm install && npm run dev
@@ -92,7 +93,7 @@ cd frontend && npm install && npm run dev
 open android/ in Android Studio, select a device or API 34+ emulator
 
 # tests
-./gradlew test              # backend, Testcontainers requires Docker
+./mvnw test                 # backend, Testcontainers requires Docker (android/ stays on Gradle)
 cd frontend && npm run test
 ```
 

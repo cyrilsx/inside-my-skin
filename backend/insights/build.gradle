@@ -1,7 +1,0 @@
-description = 'Daily rollups, weekly training volume'
-
-dependencies {
-    api project(':backend:core-domain')
-    implementation project(':backend:ingestion')
-    implementation 'org.springframework:spring-context'
-}
