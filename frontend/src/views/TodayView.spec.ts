@@ -21,6 +21,7 @@ vi.mock('../api/client', () => ({
 }))
 
 import TodayView from './TodayView.vue'
+import { formatNumber } from '../utils/format'
 
 describe('TodayView', () => {
   beforeEach(() => {
@@ -31,7 +32,7 @@ describe('TodayView', () => {
     const wrapper = mount(TodayView)
     await new Promise(resolve => setTimeout(resolve, 0))
     await wrapper.vm.$nextTick()
-    expect(wrapper.text()).toContain('1234')
+    expect(wrapper.text()).toContain(formatNumber(1234))
     expect(wrapper.text()).toContain('7.5 h')
     expect(wrapper.text()).toContain('90 min')
     expect(wrapper.text()).toContain('HEALTH_CONNECT')

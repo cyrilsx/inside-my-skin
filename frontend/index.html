@@ -4,9 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HealthHub</title>
+    <meta name="description" content="HealthHub — your health and wellbeing data from Garmin, Withings, Health Connect and manual entry, through one canonical API." />
+    <!-- Private dashboard: never indexed, no referrer leakage -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="canonical" href="/" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
+    <meta name="color-scheme" content="light dark" />
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
   </head>
   <body>
     <div id="app"></div>
+    <noscript>
+      <main style="max-width: 40rem; margin: 2rem auto; font-family: system-ui, sans-serif">
+        <h1>HealthHub</h1>
+        <p>HealthHub is a JavaScript application and needs it enabled to run. Your data stays on your own server — nothing is sent anywhere else.</p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useSourcesStore } from '../stores/sources'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { formatDateTime } from '../utils/format'
 
 const store = useSourcesStore()
+const confirmDialog = ref<InstanceType<typeof ConfirmDialog> | null>(null)
 
 onMounted(() => store.fetchConnections())
 
@@ -27,8 +30,11 @@ async function exportData(format: 'json' | 'csv') {
   URL.revokeObjectURL(url)
 }
 
-async function deleteAllData() {
-  if (!window.confirm('Delete all stored data and provider tokens? This runs asynchronously and cannot be undone.')) return
+function askDeleteAllData() {
+  confirmDialog.value?.open()
+}
+
+async function confirmDeleteAllData() {
   await store.deleteAllData()
 }
 </script>
@@ -38,13 +44,14 @@ async function deleteAllData() {
     <h2>Sources</h2>
     <p v-if="store.error" role="alert">{{ store.error }}</p>
     <table v-else>
-      <thead><tr><th>Provider</th><th>Label</th><th>Connected</th><th>Last sync</th><th>Status</th><th></th></tr></thead>
+      <caption>Connected data sources</caption>
+      <thead><tr><th scope="col">Provider</th><th scope="col">Label</th><th scope="col">Connected</th><th scope="col">Last sync</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
       <tbody>
         <tr v-for="c in store.connections" :key="c.id">
           <td>{{ c.provider }}</td>
           <td>{{ c.label ?? '—' }}</td>
-          <td>{{ c.connectedAt }}</td>
-          <td>{{ c.lastSyncAt ?? '—' }}</td>
+          <td>{{ c.connectedAt ? formatDateTime(c.connectedAt) : '—' }}</td>
+          <td>{{ c.lastSyncAt ? formatDateTime(c.lastSyncAt) : '—' }}</td>
           <td>{{ c.lastSyncStatus ?? '—' }}</td>
           <td><button @click="store.syncNow(c.id)">Sync now</button></td>
         </tr>
@@ -56,14 +63,27 @@ async function deleteAllData() {
       <button @click="connect('garmin')">Connect Garmin</button>
       <button @click="exportData('json')">Export JSON</button>
       <button @click="exportData('csv')">Export CSV</button>
-      <button class="danger" @click="deleteAllData">Delete all data</button>
+      <button class="danger" @click="askDeleteAllData">Delete all data</button>
     </div>
-    <p v-if="store.lastSync">Last sync: {{ store.lastSync.ingested }} ingested, {{ store.lastSync.duplicates }} duplicates.</p>
-    <p v-if="store.lastDeletionJob">Deletion job {{ store.lastDeletionJob.id }} accepted (status: {{ store.lastDeletionJob.status }}); completion arrives on the event stream.</p>
+    <p v-if="store.lastSync" role="status">Last sync: {{ store.lastSync.ingested }} ingested, {{ store.lastSync.duplicates }} duplicates.</p>
+    <p v-if="store.lastDeletionJob" role="status">Deletion job {{ store.lastDeletionJob.id }} accepted (status: {{ store.lastDeletionJob.status }}); completion arrives on the event stream.</p>
+    <ConfirmDialog
+      ref="confirmDialog"
+      title="Delete all data"
+      message="Delete all stored data and provider tokens? This runs asynchronously and cannot be undone."
+      confirm-label="Delete all data"
+      @confirm="confirmDeleteAllData"
+    />
   </section>
 </template>
 
 <style scoped>
 .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-.danger { color: #b00020; }
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+}
 </style>

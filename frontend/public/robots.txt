@@ -1,0 +1,4 @@
+# HealthHub is a private, single-user dashboard holding personal health data.
+# Nothing here may be indexed or crawled.
+User-agent: *
+Disallow: /

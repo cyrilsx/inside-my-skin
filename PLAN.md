@@ -133,6 +133,7 @@ Health and mental data is the most sensitive category you can store. This projec
 | M5 | Vue dashboard: Today, Trends, Activities, Mental, Sources | Done |
 | M6 | Insights, export, deletion, hexagonal boundary verification | Done |
 | M7 | Build system: backend migrates to Maven (Android stays on Gradle) | Done |
+| M8 | Frontend audited + updated against specification.website (foundations, a11y, security, performance, resilience, i18n, privacy) | Done |
 
 Detailed, acceptance-criteria per task, is in the build plan for AI agents, alongside the decision records that lock the architecture.
 

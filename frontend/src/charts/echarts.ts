@@ -8,8 +8,13 @@ echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, LegendCompone
 
 export { echarts }
 
+const reducedMotion = typeof window !== 'undefined'
+  && typeof window.matchMedia === 'function'
+  && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 export function lineSeriesOption(title: string, series: { name: string; data: [string, number][] }[]): EChartsOption {
   return {
+    animation: !reducedMotion,
     title: { text: title, textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'axis' },
     legend: { data: series.map(s => s.name), bottom: 0 },
@@ -22,10 +27,11 @@ export function lineSeriesOption(title: string, series: { name: string; data: [s
 
 export function barSeriesOption(title: string, categories: string[], data: number[]): EChartsOption {
   return {
+    animation: !reducedMotion,
     title: { text: title, textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'axis' },
-    grid: { left: 48, right: 16, top: 40, bottom: 64 },
-    xAxis: { type: 'category', data: categories, axisLabel: { rotate: 30 } },
+    grid: { left: 48, right: 16, top: 40, bottom: 48 },
+    xAxis: { type: 'category', data: categories },
     yAxis: { type: 'value', scale: true },
     series: [{ type: 'bar', data }]
   }
