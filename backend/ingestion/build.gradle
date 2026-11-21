@@ -1,8 +1,0 @@
-description = 'Idempotent pipeline, raw events'
-
-dependencies {
-    api project(':backend:core-domain')
-    implementation 'org.springframework:spring-context'
-    implementation 'org.slf4j:slf4j-api'
-    implementation 'tools.jackson.core:jackson-databind'
-}

@@ -1,10 +1,10 @@
-# Gradle / Java
-.gradle/
+# Maven / Java
+target/
 build/
 out/
 *.class
 *.jar
-!gradle/wrapper/gradle-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
 !android/gradle/wrapper/gradle-wrapper.jar
 
 # Node / frontend

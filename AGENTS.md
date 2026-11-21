@@ -41,7 +41,7 @@ Follow this sequence for every task, in order:
 Backend lane:
 
 ```
-./gradlew test                # unit + integration, Testcontainers needs Docker
+./mvnw test                   # unit + integration, Testcontainers needs Docker (backend is Maven; android/ stays on Gradle)
 docker compose up -d postgres # prerequisite for Testcontainers
 ```
 
