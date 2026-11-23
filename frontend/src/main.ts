@@ -2,14 +2,16 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import { router } from './router'
+import { i18n } from './i18n'
 import { useAppStore } from './stores/app'
 import './style.css'
 
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
+app.use(i18n)
 app.config.errorHandler = (err) => {
   console.error(err)
-  useAppStore().setError('Something went wrong while rendering this page.')
+  useAppStore().setError(i18n.global.t('errors.renderError'))
 }
 app.mount('#app')

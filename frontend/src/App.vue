@@ -1,31 +1,35 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAppStore } from './stores/app'
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const appStore = useAppStore()
 
 const links = [
-  { to: '/today', label: 'Today' },
-  { to: '/trends', label: 'Trends' },
-  { to: '/activities', label: 'Activities' },
-  { to: '/mental', label: 'Mental' },
-  { to: '/sources', label: 'Sources' }
-]
+  { to: '/today', key: 'nav.today' },
+  { to: '/trends', key: 'nav.trends' },
+  { to: '/activities', key: 'nav.activities' },
+  { to: '/mental', key: 'nav.mental' },
+  { to: '/sources', key: 'nav.sources' }
+] as const
 </script>
 
 <template>
-  <a class="skip-link" href="#main">Skip to main content</a>
+  <a class="skip-link" href="#main">{{ t('common.skipToMain') }}</a>
   <header>
     <h1>HealthHub</h1>
-    <p>Your health and wellbeing data, through one canonical API.</p>
+    <p>{{ t('app.tagline') }}</p>
     <nav aria-label="Main">
       <RouterLink
         v-for="l in links"
         :key="l.to"
         :to="l.to"
         :aria-current="route.path === l.to ? 'page' : undefined"
-      >{{ l.label }}</RouterLink>
+      >{{ t(l.key) }}</RouterLink>
+      <LanguageSwitcher />
     </nav>
   </header>
   <main id="main" tabindex="-1">
@@ -33,13 +37,13 @@ const links = [
     <RouterView />
   </main>
   <footer>
-    <p>Private dashboard — data stays on your own server. Screen time values are estimates.</p>
+    <p>{{ t('app.footer') }}</p>
   </footer>
 </template>
 
 <style scoped>
 header { padding: 16px 24px 0; }
-nav { display: flex; gap: 16px; margin: 8px 0 16px; flex-wrap: wrap; }
+nav { display: flex; gap: 16px; margin: 8px 0 16px; flex-wrap: wrap; align-items: center; }
 nav a { padding: 8px 4px; min-height: 24px; }
 nav a.router-link-active { font-weight: 700; text-decoration-thickness: 3px; }
 main { padding: 0 24px 24px; max-width: 72rem; }

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import VChart from 'vue-echarts'
 import { lineSeriesOption } from '../charts/echarts'
 import { useSeriesStore } from '../stores/series'
 import type { MetricType } from '../api/generated/types.gen'
 
+const { t } = useI18n()
 const store = useSeriesStore()
 const metric = ref<MetricType>('STEPS')
 const metrics: MetricType[] = ['STEPS', 'SLEEP_SECONDS', 'RESTING_HEART_RATE_BPM', 'HRV_RMSSD_S', 'WEIGHT_KG', 'SCREEN_TIME_S']
@@ -33,13 +35,13 @@ const option = computed(() => {
 
 <template>
   <section>
-    <h2>Trends</h2>
-    <label>Metric
+    <h2>{{ t('trends.title') }}</h2>
+    <label>{{ t('trends.metric') }}
       <select v-model="metric" @change="changeMetric">
-        <option v-for="m in metrics" :key="m" :value="m">{{ m }}</option>
+        <option v-for="m in metrics" :key="m" :value="m" translate="no">{{ m }}</option>
       </select>
     </label>
-    <p v-if="store.error" role="alert">{{ store.error }}</p>
+    <p v-if="store.error" role="alert">{{ t('errors.loadFailed') }}</p>
     <VChart v-else :option="option" style="height: 360px" autoresize />
   </section>
 </template>

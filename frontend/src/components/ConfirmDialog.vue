@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   title: string
@@ -12,6 +13,7 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const { t } = useI18n()
 const dialog = ref<HTMLDialogElement | null>(null)
 
 function open(): void {
@@ -36,8 +38,8 @@ defineExpose({ open })
     <h2>{{ props.title }}</h2>
     <p>{{ props.message }}</p>
     <div class="actions">
-      <button class="danger" @click="onConfirm">{{ props.confirmLabel ?? 'Confirm' }}</button>
-      <button @click="onCancel">Cancel</button>
+      <button class="danger" @click="onConfirm">{{ props.confirmLabel ?? t('dialog.confirm') }}</button>
+      <button @click="onCancel">{{ t('dialog.cancel') }}</button>
     </div>
   </dialog>
 </template>

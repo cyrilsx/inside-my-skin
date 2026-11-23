@@ -71,7 +71,7 @@ button.danger {
 
 .skip-link {
   position: absolute;
-  left: 8px;
+  inset-inline-start: 8px;
   top: -48px;
   z-index: 100;
   padding: 8px 12px;
@@ -91,7 +91,7 @@ table {
 }
 
 caption {
-  text-align: left;
+  text-align: start;
   font-weight: 600;
   padding: 4px 0;
 }
@@ -99,7 +99,7 @@ caption {
 th, td {
   border: 1px solid var(--border);
   padding: 6px 10px;
-  text-align: left;
+  text-align: start;
 }
 
 th {

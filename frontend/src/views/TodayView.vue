@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDailiesStore } from '../stores/dailies'
-import { formatDate, formatDurationS, formatHoursFromSeconds, formatNumber, formatWeightKg } from '../utils/format'
+import { formatDate, formatHoursFromSeconds, formatNumber, formatWeightKg } from '../utils/format'
 
+const { t } = useI18n()
 const store = useDailiesStore()
 
 const today = new Date().toISOString().slice(0, 10)
@@ -15,18 +17,18 @@ const latest = computed(() => store.items[store.items.length - 1])
 
 <template>
   <section>
-    <h2>Today</h2>
-    <p v-if="store.error" role="alert">{{ store.error }}</p>
-    <p v-else-if="store.loading">Loading…</p>
+    <h2>{{ t('today.title') }}</h2>
+    <p v-if="store.error" role="alert">{{ t('errors.loadFailed') }}</p>
+    <p v-else-if="store.loading">{{ t('common.loading') }}</p>
     <div v-else-if="latest" class="cards">
-      <div class="card"><span class="value">{{ latest.steps != null ? formatNumber(latest.steps) : '—' }}</span><span class="label">steps</span></div>
-      <div class="card"><span class="value">{{ latest.sleepSeconds != null ? formatHoursFromSeconds(latest.sleepSeconds) : '—' }}</span><span class="label">sleep</span></div>
-      <div class="card"><span class="value">{{ latest.restingHeartRateBpm ?? '—' }}</span><span class="label">resting HR (bpm)</span></div>
-      <div class="card"><span class="value">{{ latest.weightKg != null ? formatWeightKg(latest.weightKg) : '—' }}</span><span class="label">weight</span></div>
-      <div class="card"><span class="value">{{ latest.screenTimeS != null ? formatDurationS(latest.screenTimeS) : '—' }}</span><span class="label">screen time (estimate)</span></div>
-      <div class="card"><span class="value">{{ latest.sources.join(', ') }}</span><span class="label">sources</span></div>
+      <div class="card"><span class="value">{{ latest.steps != null ? formatNumber(latest.steps) : t('common.none') }}</span><span class="label">{{ t('today.steps') }}</span></div>
+      <div class="card"><span class="value">{{ latest.sleepSeconds != null ? formatHoursFromSeconds(latest.sleepSeconds) : t('common.none') }}</span><span class="label">{{ t('today.sleep') }}</span></div>
+      <div class="card"><span class="value">{{ latest.restingHeartRateBpm ?? t('common.none') }}</span><span class="label">{{ t('today.restingHr') }}</span></div>
+      <div class="card"><span class="value">{{ latest.weightKg != null ? formatWeightKg(latest.weightKg) : t('common.none') }}</span><span class="label">{{ t('today.weight') }}</span></div>
+      <div class="card"><span class="value">{{ latest.screenTimeS != null ? formatHoursFromSeconds(latest.screenTimeS) : t('common.none') }}</span><span class="label">{{ t('today.screenTime') }}</span></div>
+      <div class="card"><span class="value">{{ latest.sources.join(', ') }}</span><span class="label">{{ t('today.sources') }}</span></div>
     </div>
-    <p v-else>No data yet for {{ formatDate(today) }}.</p>
+    <p v-else>{{ t('today.noData', { date: formatDate(today) }) }}</p>
   </section>
 </template>
 
