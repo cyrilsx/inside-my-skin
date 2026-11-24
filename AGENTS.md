@@ -23,6 +23,7 @@ A personal health and wellbeing aggregation platform. One user, four data source
 - Canonical units only in core-domain and beyond: meters, kilograms, seconds. Conversions happen in adapters (inbound) and presentation only (outbound).
 - No vendor type, field name, enum, or naming leaks past the adapter module that owns it. UI labels are ours; if you catch yourself naming a column or a type after a vendor, stop.
 - Secrets live in environment variables. No token or key in code, tests, fixtures committed to the repo, or logs. The test scan for secret patterns must keep passing. Exception (owner-approved, M10): users may submit their own provider credentials through the authenticated `PUT /api/v1/providers/{provider}/credentials` endpoint; they are stored AES-GCM encrypted at rest under the env-held `TOKEN_ENCRYPTION_KEY` master key, are never returned by the API (status exposes key names only), and never logged. Master keys (JWT_SIGNING_KEY, TOKEN_ENCRYPTION_KEY, WEBHOOK_SECRET, callback secrets) and vendor base URLs remain env-only.
+- Logs must never contain secrets, tokens, credentials, health payloads or PII. Redact before logging (see `Redactor`/`SafeLog`/`logger.ts`); never log request bodies, the Authorization header, OAuth code/state, or exception messages that may embed payloads. The redaction tests must keep passing.
 - Mental wellbeing data is descriptive, never prescriptive. No UI text, API field, or insight job may generate recommendations or causal health claims. Wording like "you should" or "this causes" fails review by definition.
 - Garmin data must never be used to train AI models. Do not add any dataset export, embedding pipeline, or model fine-tuning path whose input includes Garmin-sourced records.
 
@@ -42,7 +43,7 @@ Backend lane:
 
 ```
 ./mvnw test                   # unit + integration, Testcontainers needs Docker (backend is Maven; android/ stays on Gradle)
-docker compose up -d postgres # prerequisite for Testcontainers
+POSTGRES_PASSWORD=... docker compose -f infra/docker-compose.yml up -d postgres # prerequisite for Testcontainers
 ```
 
 Frontend lane:
@@ -59,7 +60,7 @@ cd android && ./gradlew assembleDebug testDebugUnitTest
 ./gradlew connectedDebugAndroidTest   # emulator or device, API 34+
 ```
 
-Cross-cutting: `docker compose up` must still boot the whole stack, and `docker compose run backend` (Swagger UI at `/swagger-ui`) must reflect `docs/openapi.yaml` when the task touches the API.
+Cross-cutting: `docker compose -f infra/docker-compose.yml up` must still boot the stack (currently the postgres service), and the running backend (`./mvnw -pl backend/app spring-boot:run`, Swagger UI at `/swagger-ui`) must serve `docs/openapi.yaml` unchanged when the task touches the API.
 
 ## 6. Report format
 

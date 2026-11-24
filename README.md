@@ -37,12 +37,12 @@ Three properties hold everywhere: ingestion is idempotent ((provider, provider_r
 
 | Layer | Choice |
 | --- | --- |
-| Backend | Spring Boot 4.1, Java 25, Jakarta EE 11, Jackson 3, Spring Security (resource-server JWT) |
+| Backend | Spring Boot 4.1, Java 25, Maven multi-module, Jakarta EE 11, Jackson 3, Spring Security (resource-server JWT) |
 | Storage | PostgreSQL, Flyway migrations, JSONB raw retention |
 | Frontend | Vue 3 (Composition API), TypeScript, Vite, Pinia, ECharts |
 | Android | Kotlin, Jetpack Compose, Health Connect SDK, WorkManager, Room |
-| Testing | JUnit 5, Testcontainers, WireMock, vitest |
-| Ops | Docker Compose, CI on every push |
+| Testing | JUnit, Testcontainers, WireMock, ArchUnit, vitest |
+| Ops | Docker Compose (`infra/docker-compose.yml`), Maven wrapper (`./mvnw`), CI on every push |
 
 ## Repository layout
 
@@ -55,11 +55,13 @@ healthhub/
 │   ├── ingestion/         # idempotent pipeline, raw events
 │   ├── api/               # canonical REST + SSE, OpenAPI
 │   ├── companion-api/     # batch upload endpoints
-│   └── insights/          # daily rollups, weekly training volume
+│   ├── insights/          # daily rollups, weekly training volume
+│   └── architecture/      # ArchUnit hexagonal-boundary tests
 ├── frontend/              # Vue 3 SPA
 ├── android/               # companion app
-├── infra/                  # docker-compose, CI
-└── docs/                   # ADRs, openapi.yaml, fixtures
+├── infra/                  # docker-compose.yml, scripts
+├── .github/workflows/      # CI
+└── docs/                   # ADRs, openapi.yaml, fixtures, task files
 ```
 
 The contract lives in `docs/openapi.yaml`. It is written before implementation and is the single source of truth for the browser and Android clients. Highlights:
@@ -71,9 +73,16 @@ GET  /api/v1/activities              # sport sessions + manual entries
 GET  /api/v1/mental/sessions         # meditation, breathing, movement
 GET  /api/v1/mental/usage/daily      # screen minutes, per-app
 GET  /api/v1/mood/checkins           # valence, labels, notes
-GET  /api/v1/events/stream           # SSE live updates
-GET  /api/v1/export                  # full JSON/CSV export
-DELETE /api/v1/data                  # async deletion
+GET    /api/v1/events/stream                    # SSE live updates
+GET    /api/v1/export?format=json|csv           # full export
+DELETE /api/v1/data                             # async deletion job
+GET    /api/v1/providers                        # known providers + credential flags
+PUT    /api/v1/providers/{provider}/credentials # user-supplied credentials (encrypted at rest)
+GET    /api/v1/connections                      # connections and sync state
+POST   /api/v1/connections/{provider}/connect  # key-based providers
+GET    /api/v1/connections/{provider}/authorize# OAuth start (Withings)
+POST   /api/v1/companion/ingest                # companion batch upload (replay-safe)
+POST   /api/v1/webhooks/{provider}              # vendor webhooks (X-Webhook-Secret)
 ```
 
 ## Getting started
@@ -81,10 +90,10 @@ DELETE /api/v1/data                  # async deletion
 Prerequisites: JDK 25, Node 22, Docker, Android Studio (for the companion app).
 
 ```
-# backend
-docker compose up -d postgres
-./mvnw -pl backend/app -am package -DskipTests
-./mvnw -pl backend/app spring-boot:run   # app + migrations + actuator on :8080
+# backend (PostgreSQL lives in infra/docker-compose.yml; POSTGRES_PASSWORD is required)
+POSTGRES_PASSWORD=change-me docker compose -f infra/docker-compose.yml up -d postgres
+./mvnw install -DskipTests               # builds all backend modules into ~/.m2
+./mvnw -pl backend/app spring-boot:run    # app + migrations + actuator on :8080
 
 # frontend
 cd frontend && npm install && npm run dev
@@ -97,44 +106,52 @@ open android/ in Android Studio, select a device or API 34+ emulator
 cd frontend && npm run test
 ```
 
-The backend runs in fixture mode until real vendor credentials exist. Set them in the environment when you have them:
+Tests run in fixture mode — vendor interaction in tests only ever uses the recorded fixtures in `docs/fixtures/`; real vendor endpoints are never called from the test suite, and no task may invent a vendor endpoint or field name.
+
+Provider credentials can be supplied per provider at runtime from the dashboard (Sources → Provider credentials, stored AES-GCM encrypted at rest — see ADR-0007), or via environment variables as a fallback. Server/master secrets are env-only:
 
 ```
-GARMIN_PERSONAL_KEY=       # from Garmin Connect Web, Personal API key page
+# env-only master secrets
+JWT_SIGNING_KEY=          # HS256 signing key (base64, 256-bit)
+TOKEN_ENCRYPTION_KEY=     # AES-256 master key for encrypted token/credential storage
+WEBHOOK_SECRET=           # expected in the X-Webhook-Secret header on /api/v1/webhooks/*
+POSTGRES_PASSWORD=...     # required by infra/docker-compose.yml
+
+# optional env fallback for provider credentials (overridden by UI-supplied credentials)
+GARMIN_PERSONAL_KEY=      # Garmin Connect Web, Personal API key page
+GARMIN_KEY_HEADER=
+GARMIN_USER_ID=
 WITHINGS_CLIENT_ID=
 WITHINGS_CLIENT_SECRET=
 WITHINGS_CALLBACK_SECRET=
-TOKEN_ENCRYPTION_KEY=     # AES-256 key for provider token storage
-JWT_SIGNING_KEY=
 ```
-
-Integration tests run against recorded fixtures in `docs/fixtures/`. Real vendor endpoints are never called from the test suite, and no task in the build pipeline may invent a vendor endpoint or field name.
 
 ## Privacy and data handling
 
 Health and mental data is the most sensitive category you can store. This project treats it accordingly, as architecture rather than ceremony:
 
-- Provider tokens are encrypted at rest (AES-GCM). Secrets exist only in environment variables.
-- Raw vendor payloads are retained with normalization status, auditable and reprocessable, purged after 24 months.
-- Every user-facing stream records consent per source, and a deletion job removes data and tokens with a completion event.
+- Provider tokens and user-supplied provider credentials are encrypted at rest (AES-GCM, master key in env). Master secrets exist only in environment variables; the API never returns stored credential values.
+- Raw vendor payloads are retained in JSONB with normalization status, auditable and reprocessable. The user-triggered deletion job (`DELETE /api/v1/data`) removes data, tokens, credentials' tokens and audit with a completion event on the SSE stream.
+- Connections record per-source state and every sync is auditable (`sync_audit`).
 - Sport and screen-time figures are presented as measurements and estimates respectively, never as diagnoses or advice.
 - Garmin's developer agreement prohibits training AI models on their data; this project does not do so, and no export path introduces vendor terms for downstream consumers.
-- Logs are structured and scanned for token leakage in CI.
+- Logs are redacted by construction (backend `Redactor`, Android `SafeLog`, frontend `logger.ts`) and covered by tests; CI runs a secret-pattern scan over the repo. Sensitive data must never appear in logs (AGENTS.md §3).
 
 ## Roadmap
 
-| Milestone | Scope | Status |
-| --- | --- | --- |
-| M0 | Monorepo skeleton, green CI | Not started |
-| M1 | OpenAPI contract, core domain, idempotent ingestion, security | Not started |
-| M2 | Withings end to end (OAuth, webhooks, read API) | Not started |
-| M3 | Garmin Personal API adapter and sync orchestration | Not started |
-| M4 | Android companion app: Health Connect, usage stats, mood, upload | Not started |
-| M5 | Vue dashboard: Today, Trends, Activities, Mental, Sources | Not started |
-| M6 | Insights, export, deletion, hexagonal boundary verification | Not started |
+All milestones M0–M11 are done and tagged (v0.2.0 … v0.9.0); the living roadmap with per-milestone status is [PLAN.md](PLAN.md):
 
-Detailed, acceptance-criteria per task, is in the build plan for AI agents, alongside the decision records that lock the architecture.
+| Milestone | Scope |
+| --- | --- |
+| M0–M1 | Monorepo skeleton, CI, OpenAPI contract, core domain, idempotent ingestion, JWT security |
+| M2–M3 | Withings (OAuth, webhooks) and Garmin adapters + sync orchestration |
+| M4 | Android companion (Health Connect, usage stats, mood, WorkManager upload) |
+| M5–M6 | Vue dashboard; insights, SSE, export, deletion, hexagonal boundary tests |
+| M7–M9 | Backend on Maven; frontend audited vs specification.website; i18n (en/fr/ar/zh/ru) |
+| M10–M11 | Per-user provider credentials (encrypted at rest); redacted observability logs |
+
+Per-task acceptance criteria live in `docs/tasks/`, decision records in `docs/adr/`.
 
 ## Contributing
 
-Tasks are dispatched and tracked from the build plan. One task per branch, commit format `task(TASK-ID): summary`, the full test suite must pass before merge. Tasks must not modify files owned by another in-progress task, and vendor integrations run on fixtures until credentials are provided.
+Tasks are dispatched and tracked from `PLAN.md` + `docs/tasks/`. One task per branch, commit format `task(TASK-ID): summary`, the full test suite must pass before merge. Tasks must not modify files owned by another in-progress task, and vendor integrations run on fixtures until credentials are provided.
