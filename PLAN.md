@@ -135,6 +135,7 @@ Health and mental data is the most sensitive category you can store. This projec
 | M7 | Build system: backend migrates to Maven (Android stays on Gradle) | Done |
 | M8 | Frontend audited + updated against specification.website (foundations, a11y, security, performance, resilience, i18n, privacy) | Done |
 | M9 | Frontend i18n: English, French, Arabic (RTL), Chinese, Russian — vue-i18n, language switcher, Intl locale formatting | Done |
+| M10 | Per-user provider credentials via authenticated API, stored AES-GCM encrypted (env = fallback/master keys); providers addable dynamically | Done |
 
 Detailed, acceptance-criteria per task, is in the build plan for AI agents, alongside the decision records that lock the architecture.
 

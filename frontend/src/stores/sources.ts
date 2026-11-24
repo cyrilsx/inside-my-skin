@@ -1,13 +1,51 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient, sdk } from '../api/client'
-import type { Connection, DeletionJob, SyncResult } from '../api/generated/types.gen'
+import type { Connection, CredentialsStatus, DeletionJob, Provider, ProviderInfo, SyncResult } from '../api/generated/types.gen'
 
 export const useSourcesStore = defineStore('sources', () => {
   const connections = ref<Connection[]>([])
   const error = ref<string | null>(null)
   const lastSync = ref<SyncResult | null>(null)
   const lastDeletionJob = ref<DeletionJob | null>(null)
+  const providers = ref<ProviderInfo[]>([])
+  const credentials = ref<Record<string, CredentialsStatus | null>>({})
+
+  async function fetchProviders(): Promise<void> {
+    const result = await sdk.listProviders({ client: apiClient })
+    if (!result.error) {
+      providers.value = result.data?.items ?? []
+    }
+  }
+
+  async function fetchCredentialsStatus(provider: Provider): Promise<void> {
+    const result = await sdk.getProviderCredentials({ client: apiClient, path: { provider } })
+    if (!result.error && result.data) {
+      credentials.value = { ...credentials.value, [provider]: result.data }
+    }
+  }
+
+  async function saveCredentials(provider: Provider, values: Record<string, string>): Promise<boolean> {
+    const result = await sdk.putProviderCredentials({ client: apiClient, path: { provider }, body: { credentials: values } })
+    if (result.error) {
+      error.value = 'Save failed'
+      return false
+    }
+    error.value = null
+    await fetchCredentialsStatus(provider)
+    return true
+  }
+
+  async function deleteCredentials(provider: Provider): Promise<boolean> {
+    const result = await sdk.deleteProviderCredentials({ client: apiClient, path: { provider } })
+    if (result.error) {
+      error.value = 'Delete failed'
+      return false
+    }
+    error.value = null
+    await fetchCredentialsStatus(provider)
+    return true
+  }
 
   async function fetchConnections(): Promise<void> {
     const result = await sdk.listConnections({ client: apiClient })
@@ -58,5 +96,5 @@ export const useSourcesStore = defineStore('sources', () => {
     }
   }
 
-  return { connections, error, lastSync, lastDeletionJob, fetchConnections, syncNow, connectProvider, startAuthorization, exportData, deleteAllData }
+  return { connections, error, lastSync, lastDeletionJob, providers, credentials, fetchConnections, syncNow, connectProvider, startAuthorization, exportData, deleteAllData, fetchProviders, fetchCredentialsStatus, saveCredentials, deleteCredentials }
 })

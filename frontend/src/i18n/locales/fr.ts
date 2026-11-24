@@ -16,6 +16,8 @@ export default {
     loadFailed: 'Impossible de charger les données. Veuillez réessayer.',
     exportFailed: 'L’export a échoué.',
     deletionFailed: 'La demande de suppression a échoué.',
+    saveFailed: 'Échec de l’enregistrement.',
+    deleteFailed: 'Échec de la suppression.',
     renderError: 'Une erreur est survenue lors de l’affichage de cette page.'
   },
   common: {
@@ -80,6 +82,17 @@ export default {
     deleteAll: 'Supprimer toutes les données',
     lastSyncResult: 'Dernière synchro : {ingested} ingérées, {duplicates} doublons.',
     deletionAccepted: 'Job de suppression {id} accepté (statut : {status}) ; la confirmation arrivera sur le flux d’événements.'
+  },
+  credentials: {
+    title: 'Identifiants du fournisseur',
+    hint: 'Ajoutez vos propres identifiants pour un fournisseur. Ils sont stockés chiffrés sur le serveur et ne sont plus jamais affichés.',
+    provider: 'Fournisseur',
+    configured: 'Configuré ({keys})',
+    notConfigured: 'Aucun identifiant stocké pour le moment.',
+    save: 'Enregistrer les identifiants',
+    delete: 'Supprimer les identifiants',
+    saved: 'Identifiants enregistrés.',
+    deleted: 'Identifiants supprimés.'
   },
   dialog: {
     deleteTitle: 'Supprimer toutes les données',

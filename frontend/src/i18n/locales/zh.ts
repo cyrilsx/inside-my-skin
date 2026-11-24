@@ -16,6 +16,8 @@ export default {
     loadFailed: '无法加载数据，请重试。',
     exportFailed: '导出失败。',
     deletionFailed: '删除请求失败。',
+    saveFailed: '保存失败。',
+    deleteFailed: '删除失败。',
     renderError: '渲染此页面时出错。'
   },
   common: {
@@ -80,6 +82,17 @@ export default {
     deleteAll: '删除所有数据',
     lastSyncResult: '上次同步：已导入 {ingested} 条，重复 {duplicates} 条。',
     deletionAccepted: '删除任务 {id} 已接受（状态：{status}）；完成通知将通过事件流送达。'
+  },
+  credentials: {
+    title: '提供商凭据',
+    hint: '为提供商填写您自己的凭据。它们在服务器上加密存储，不会再次显示。',
+    provider: '提供商',
+    configured: '已配置（{keys}）',
+    notConfigured: '尚未存储凭据。',
+    save: '保存凭据',
+    delete: '删除凭据',
+    saved: '凭据已保存。',
+    deleted: '凭据已删除。'
   },
   dialog: {
     deleteTitle: '删除所有数据',

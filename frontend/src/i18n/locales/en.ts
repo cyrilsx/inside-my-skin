@@ -16,6 +16,8 @@ export default {
     loadFailed: 'Could not load the data. Please try again.',
     exportFailed: 'Export failed.',
     deletionFailed: 'Deletion request failed.',
+    saveFailed: 'Save failed.',
+    deleteFailed: 'Delete failed.',
     renderError: 'Something went wrong while rendering this page.'
   },
   common: {
@@ -80,6 +82,17 @@ export default {
     deleteAll: 'Delete all data',
     lastSyncResult: 'Last sync: {ingested} ingested, {duplicates} duplicates.',
     deletionAccepted: 'Deletion job {id} accepted (status: {status}); completion arrives on the event stream.'
+  },
+  credentials: {
+    title: 'Provider credentials',
+    hint: 'Add your own credentials for a provider. They are stored encrypted on the server and never displayed again.',
+    provider: 'Provider',
+    configured: 'Configured ({keys})',
+    notConfigured: 'No credentials stored yet.',
+    save: 'Save credentials',
+    delete: 'Delete credentials',
+    saved: 'Credentials saved.',
+    deleted: 'Credentials deleted.'
   },
   dialog: {
     deleteTitle: 'Delete all data',

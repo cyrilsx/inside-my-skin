@@ -1,9 +1,11 @@
 package dev.healthhub.garmin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,8 +26,38 @@ import tools.jackson.databind.json.JsonMapper;
 
 class GarminAdapterTest {
 
+    static class FakeSettingsPort implements dev.healthhub.ingestion.ProviderSettingsPort {
+        final java.util.Map<String, java.util.Map<String, String>> byProvider = new java.util.HashMap<>();
+
+        @Override
+        public void save(String provider, java.util.Map<String, String> credentials) {
+            byProvider.put(provider, java.util.Map.copyOf(credentials));
+        }
+
+        @Override
+        public java.util.Optional<java.util.Map<String, String>> find(String provider) {
+            return java.util.Optional.ofNullable(byProvider.get(provider));
+        }
+
+        @Override
+        public java.util.List<String> keys(String provider) {
+            return find(provider).map(m -> m.keySet().stream().sorted().toList()).orElse(java.util.List.of());
+        }
+
+        @Override
+        public boolean isConfigured(String provider) {
+            return byProvider.containsKey(provider);
+        }
+
+        @Override
+        public void delete(String provider) {
+            byProvider.remove(provider);
+        }
+    }
+
     private WireMockServer wireMock;
     private GarminAdapter adapter;
+    private FakeSettingsPort settingsPort;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -44,7 +76,8 @@ class GarminAdapterTest {
         properties.setUserId("u1");
         properties.setKeyHeader("X-Test-Key");
         properties.setPersonalKey("test-personal-key");
-        adapter = new GarminAdapter(properties, JsonMapper.builder().build(),
+        settingsPort = new FakeSettingsPort();
+        adapter = new GarminAdapter(properties, JsonMapper.builder().build(), settingsPort,
                 Clock.fixed(Instant.parse("2026-03-29T20:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -95,5 +128,26 @@ class GarminAdapterTest {
     void futureSinceReturnsNothing() {
         var records = adapter.fetch(UUID.randomUUID(), Instant.parse("2026-03-30T00:00:00Z"));
         assertTrue(records.isEmpty());
+    }
+
+    @Test
+    void userSuppliedCredentialsOverrideEnvironment() throws Exception {
+        settingsPort.save("garmin", java.util.Map.of("personalKey", "user-key", "userId", "user-u1"));
+        stubAll("user-u1");
+
+        var records = adapter.fetch(java.util.UUID.randomUUID(), Instant.parse("2026-03-29T00:00:00Z"));
+
+        org.junit.jupiter.api.Assertions.assertFalse(records.isEmpty());
+        wireMock.verify(getRequestedFor(urlPathMatching("/modern/proxy/.*"))
+                .withHeader("X-Test-Key", equalTo("user-key")));
+    }
+
+    private void stubAll(String userId) throws Exception {
+        stub("/modern/proxy/usersummary-service/usersummary/daily/" + userId + "/2026-03-29",
+                "../../../docs/fixtures/garmin/daily-summary-synthetic.json");
+        stub("/modern/proxy/sleep-service/sleep/daily/" + userId + "/2026-03-29",
+                "../../../docs/fixtures/garmin/sleep-daily-synthetic.json");
+        stub("/modern/proxy/hrv-service/hrv/daily/" + userId + "/2026-03-29",
+                "../../../docs/fixtures/garmin/hrv-daily-synthetic.json");
     }
 }

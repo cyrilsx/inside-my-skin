@@ -5,11 +5,12 @@ import dev.healthhub.ingestion.ConnectionCredentialsPort;
 import dev.healthhub.ingestion.ConnectionInfo;
 import dev.healthhub.ingestion.ConnectionStore;
 import dev.healthhub.ingestion.ProviderOAuthPort;
+import dev.healthhub.ingestion.ProviderSettingsPort;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -18,7 +19,6 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
-@ConditionalOnProperty(prefix = "healthhub.withings", name = "enabled")
 public class WithingsOAuthAdapter implements ProviderOAuthPort {
 
     private final WithingsProperties properties;
@@ -26,18 +26,25 @@ public class WithingsOAuthAdapter implements ProviderOAuthPort {
     private final ObjectMapper objectMapper;
     private final ConnectionStore connectionStore;
     private final ConnectionCredentialsPort credentialsPort;
-    private final WithingsStateCodec stateCodec;
+    private final ProviderSettingsPort settingsPort;
     private final Clock clock;
 
     public WithingsOAuthAdapter(WithingsProperties properties, ObjectMapper objectMapper,
-            ConnectionStore connectionStore, ConnectionCredentialsPort credentialsPort, Clock clock) {
+            ConnectionStore connectionStore, ConnectionCredentialsPort credentialsPort,
+            ProviderSettingsPort settingsPort, Clock clock) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.connectionStore = connectionStore;
         this.credentialsPort = credentialsPort;
+        this.settingsPort = settingsPort;
         this.clock = clock;
         this.restClient = RestClient.builder().baseUrl(properties.getBaseUrl()).build();
-        this.stateCodec = new WithingsStateCodec(properties.getCallbackSecret());
+    }
+
+    // created lazily: the callback secret may come from the environment and is only
+    // required when an authorization flow actually runs
+    private WithingsStateCodec stateCodec() {
+        return new WithingsStateCodec(properties.getCallbackSecret());
     }
 
     @Override
@@ -48,10 +55,10 @@ public class WithingsOAuthAdapter implements ProviderOAuthPort {
     @Override
     public AuthorizationInit startAuthorization() {
         var connection = connectionStore.saveNew(provider(), "Withings", Instant.now(clock));
-        var state = stateCodec.issue(connection.id());
+        var state = stateCodec().issue(connection.id());
         var url = URI.create(properties.getAuthorizeUrl()
                 + "?response_type=code"
-                + "&client_id=" + properties.getClientId()
+                + "&client_id=" + clientId()
                 + "&state=" + state
                 + "&scope=" + properties.getScope()
                 + "&redirect_uri=" + properties.getRedirectUri());
@@ -60,11 +67,11 @@ public class WithingsOAuthAdapter implements ProviderOAuthPort {
 
     @Override
     public ConnectionInfo handleCallback(String code, String state) {
-        var connectionId = stateCodec.verify(state);
+        var connectionId = stateCodec().verify(state);
         var body = new LinkedMultiValueMap<String, String>();
         body.add("grant_type", "authorization_code");
-        body.add("client_id", properties.getClientId());
-        body.add("client_secret", properties.getClientSecret());
+        body.add("client_id", clientId());
+        body.add("client_secret", clientSecret());
         body.add("code", code);
         body.add("redirect_uri", properties.getRedirectUri());
         var response = restClient.post()
@@ -83,6 +90,33 @@ public class WithingsOAuthAdapter implements ProviderOAuthPort {
                 expiresAt);
         return connectionStore.find(connectionId)
                 .orElseThrow(() -> new IllegalStateException("connection vanished: " + connectionId));
+    }
+
+    /** User-supplied credentials (encrypted at rest) win over environment configuration. */
+    private Map<String, String> userCredentials() {
+        return settingsPort.find(provider()).orElse(Map.of());
+    }
+
+    private String clientId() {
+        var value = userCredentials().get("clientId");
+        if (value == null || value.isBlank()) {
+            value = properties.getClientId();
+        }
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("withings clientId is not configured: save it via PUT /api/v1/providers/withings/credentials or set healthhub.withings.client-id");
+        }
+        return value;
+    }
+
+    private String clientSecret() {
+        var value = userCredentials().get("clientSecret");
+        if (value == null || value.isBlank()) {
+            value = properties.getClientSecret();
+        }
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("withings clientSecret is not configured: save it via PUT /api/v1/providers/withings/credentials or set healthhub.withings.client-secret");
+        }
+        return value;
     }
 
     private void assertStatusOk(JsonNode response) {

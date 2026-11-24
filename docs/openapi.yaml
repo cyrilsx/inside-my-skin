@@ -24,6 +24,7 @@ tags:
   - name: data
   - name: companion
   - name: connections
+  - name: providers
   - name: webhooks
 paths:
   /connections:
@@ -138,6 +139,74 @@ paths:
           description: Connection revoked
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /providers:
+    get:
+      tags: [providers]
+      summary: List known providers and whether user credentials are configured for them
+      operationId: listProviders
+      responses:
+        '200':
+          description: Known providers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /providers/{provider}/credentials:
+    get:
+      tags: [providers]
+      summary: Credential presence for a provider — never returns secret values
+      operationId: getProviderCredentials
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Provider' }
+      responses:
+        '200':
+          description: Configured flag and credential key names
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialsStatus'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    put:
+      tags: [providers]
+      summary: Save user-supplied credentials for a provider (stored AES-GCM encrypted at rest)
+      operationId: putProviderCredentials
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Provider' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialsUpdate'
+      responses:
+        '204':
+          description: Credentials saved (encrypted); values are never returned
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [providers]
+      summary: Delete stored credentials for a provider
+      operationId: deleteProviderCredentials
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Provider' }
+      responses:
+        '204':
+          description: Credentials deleted
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
   /webhooks/{provider}:
     post:
       tags: [webhooks]
@@ -390,6 +459,38 @@ components:
       type: string
       description: Provider identifier used in connection management paths
       enum: [withings, garmin]
+    ProviderInfo:
+      type: object
+      required: [provider, oauth, credentialsConfigured]
+      properties:
+        provider: { type: string }
+        oauth: { type: boolean, description: 'True when the provider uses OAuth (use /connections/{provider}/authorize)' }
+        credentialsConfigured: { type: boolean, description: 'True when user-supplied credentials are stored for this provider' }
+    ProviderList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProviderInfo' }
+    CredentialsUpdate:
+      type: object
+      required: [credentials]
+      description: Generic credential map (e.g. clientId/clientSecret for OAuth providers, personalKey/userId for key-based ones)
+      properties:
+        credentials:
+          type: object
+          additionalProperties: { type: string, maxLength: 4096 }
+          maxProperties: 16
+    CredentialsStatus:
+      type: object
+      required: [configured, keys]
+      properties:
+        configured: { type: boolean }
+        keys:
+          type: array
+          items: { type: string }
+          description: Credential key names only; secret values are never returned
     Source:
       type: string
       description: Canonical data source label

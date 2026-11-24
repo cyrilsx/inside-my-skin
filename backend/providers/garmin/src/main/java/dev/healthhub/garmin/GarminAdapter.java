@@ -3,6 +3,7 @@ package dev.healthhub.garmin;
 import dev.healthhub.core.MetricType;
 import dev.healthhub.core.Source;
 import dev.healthhub.ingestion.ProviderRecord;
+import dev.healthhub.ingestion.ProviderSettingsPort;
 import dev.healthhub.ingestion.ProviderSyncPort;
 import java.time.Clock;
 import java.time.Instant;
@@ -10,15 +11,14 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
-@ConditionalOnProperty(prefix = "healthhub.garmin", name = "enabled")
 public class GarminAdapter implements ProviderSyncPort {
 
     private static final int MAX_LOOKBACK_DAYS = 31;
@@ -26,11 +26,14 @@ public class GarminAdapter implements ProviderSyncPort {
     private final GarminProperties properties;
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final ProviderSettingsPort settingsPort;
     private final Clock clock;
 
-    public GarminAdapter(GarminProperties properties, ObjectMapper objectMapper, Clock clock) {
+    public GarminAdapter(GarminProperties properties, ObjectMapper objectMapper,
+            ProviderSettingsPort settingsPort, Clock clock) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.settingsPort = settingsPort;
         this.clock = clock;
         var builder = RestClient.builder().baseUrl(properties.getBaseUrl());
         this.restClient = builder.build();
@@ -58,7 +61,7 @@ public class GarminAdapter implements ProviderSyncPort {
 
     private List<ProviderRecord> fetchDay(LocalDate date) {
         var records = new ArrayList<ProviderRecord>();
-        var summary = get("/modern/proxy/usersummary-service/usersummary/daily/" + properties.getUserId() + "/" + date);
+        var summary = get("/modern/proxy/usersummary-service/usersummary/daily/" + userId() + "/" + date);
         if (summary != null) {
             var anchor = anchor(date);
             if (summary.has("totalSteps")) {
@@ -69,7 +72,7 @@ public class GarminAdapter implements ProviderSyncPort {
                         summary.get("restingHeartRate").asDouble(), anchor, summary));
             }
         }
-        var sleep = get("/modern/proxy/sleep-service/sleep/daily/" + properties.getUserId() + "/" + date);
+        var sleep = get("/modern/proxy/sleep-service/sleep/daily/" + userId() + "/" + date);
         if (sleep != null && sleep.has("dailySleepDTO")) {
             var dto = sleep.get("dailySleepDTO");
             if (dto.has("sleepTimeSeconds")) {
@@ -78,7 +81,7 @@ public class GarminAdapter implements ProviderSyncPort {
                         startedAt, dto));
             }
         }
-        var hrv = get("/modern/proxy/hrv-service/hrv/daily/" + properties.getUserId() + "/" + date);
+        var hrv = get("/modern/proxy/hrv-service/hrv/daily/" + userId() + "/" + date);
         if (hrv != null && hrv.has("hrvSummary")) {
             var lastHrv = hrv.get("hrvSummary").path("lastHrv");
             if (lastHrv.has("hrvValue")) {
@@ -99,10 +102,35 @@ public class GarminAdapter implements ProviderSyncPort {
                 objectMapper.writeValueAsString(raw));
     }
 
+    /** User-supplied credentials (encrypted at rest) win over environment configuration. */
+    private Map<String, String> userCredentials() {
+        return settingsPort.find(provider()).orElse(Map.of());
+    }
+
+    private String userId() {
+        var value = userCredentials().get("userId");
+        if (value == null || value.isBlank()) {
+            value = properties.getUserId();
+        }
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("garmin userId is not configured: save it via PUT /api/v1/providers/garmin/credentials or set healthhub.garmin.user-id");
+        }
+        return value;
+    }
+
+    private String personalKey() {
+        var value = userCredentials().get("personalKey");
+        if (value == null || value.isBlank()) {
+            value = properties.getPersonalKey();
+        }
+        return value == null ? "" : value;
+    }
+
     private JsonNode get(String path) {
         var spec = restClient.get().uri(path);
-        if (!properties.getKeyHeader().isBlank() && !properties.getPersonalKey().isBlank()) {
-            spec = spec.header(properties.getKeyHeader(), properties.getPersonalKey());
+        var personalKey = personalKey();
+        if (!properties.getKeyHeader().isBlank() && !personalKey.isBlank()) {
+            spec = spec.header(properties.getKeyHeader(), personalKey);
         }
         return spec.retrieve().body(JsonNode.class);
     }

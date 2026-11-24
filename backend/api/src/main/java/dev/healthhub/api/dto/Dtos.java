@@ -1,5 +1,7 @@
 package dev.healthhub.api.dto;
 
+import dev.healthhub.ingestion.ProviderInfo;
+
 import dev.healthhub.core.Source;
 import java.time.LocalDate;
 import java.util.List;
@@ -128,5 +130,8 @@ public final class Dtos {
             List<UsageDailyDto> usageDaily,
             List<MoodCheckinDto> moodCheckins,
             List<ConnectionDto> connections) {
+    }
+
+    public record ProviderListDto(java.util.List<ProviderInfo> items) {
     }
 }

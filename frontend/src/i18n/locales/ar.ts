@@ -16,6 +16,8 @@ export default {
     loadFailed: 'تعذّر تحميل البيانات. حاول مرة أخرى.',
     exportFailed: 'فشل التصدير.',
     deletionFailed: 'فشل طلب الحذف.',
+    saveFailed: 'فشل الحفظ.',
+    deleteFailed: 'فشل الحذف.',
     renderError: 'حدث خطأ أثناء عرض هذه الصفحة.'
   },
   common: {
@@ -80,6 +82,17 @@ export default {
     deleteAll: 'حذف كل البيانات',
     lastSyncResult: 'آخر مزامنة: {ingested} مسجّلة، {duplicates} مكررة.',
     deletionAccepted: 'قُبل طلب الحذف {id} (الحالة: {status})؛ سيصل الإكمال عبر دفق الأحداث.'
+  },
+  credentials: {
+    title: 'بيانات اعتماد المزوّد',
+    hint: 'أضف بيانات اعتمادك الخاصة بالمزوّد. تُخزن مشفرة على الخادم ولا تُعرض مجددًا.',
+    provider: 'المزوّد',
+    configured: 'مهيأ ({keys})',
+    notConfigured: 'لا توجد بيانات اعتماد مخزنة بعد.',
+    save: 'حفظ بيانات الاعتماد',
+    delete: 'حذف بيانات الاعتماد',
+    saved: 'تم حفظ بيانات الاعتماد.',
+    deleted: 'تم حذف بيانات الاعتماد.'
   },
   dialog: {
     deleteTitle: 'حذف كل البيانات',

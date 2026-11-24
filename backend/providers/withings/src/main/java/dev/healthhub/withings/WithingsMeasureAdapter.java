@@ -7,14 +7,12 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
-@ConditionalOnProperty(prefix = "healthhub.withings", name = "enabled")
 public class WithingsMeasureAdapter implements ProviderSyncPort {
 
     private final WithingsProperties properties;

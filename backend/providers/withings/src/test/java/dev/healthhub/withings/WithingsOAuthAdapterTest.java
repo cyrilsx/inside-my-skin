@@ -32,8 +32,39 @@ import tools.jackson.databind.json.JsonMapper;
 
 class WithingsOAuthAdapterTest {
 
+    static class FakeSettingsPort implements dev.healthhub.ingestion.ProviderSettingsPort {
+        final java.util.Map<String, java.util.Map<String, String>> byProvider = new java.util.HashMap<>();
+
+        @Override
+        public void save(String provider, java.util.Map<String, String> credentials) {
+            byProvider.put(provider, java.util.Map.copyOf(credentials));
+        }
+
+        @Override
+        public java.util.Optional<java.util.Map<String, String>> find(String provider) {
+            return java.util.Optional.ofNullable(byProvider.get(provider));
+        }
+
+        @Override
+        public java.util.List<String> keys(String provider) {
+            return find(provider).map(m -> m.keySet().stream().sorted().toList()).orElse(java.util.List.of());
+        }
+
+        @Override
+        public boolean isConfigured(String provider) {
+            return byProvider.containsKey(provider);
+        }
+
+        @Override
+        public void delete(String provider) {
+            byProvider.remove(provider);
+        }
+    }
+
+
     private WireMockServer wireMock;
     private WithingsOAuthAdapter adapter;
+    private FakeSettingsPort settingsPort;
     private WithingsStateCodec stateCodec;
     private FakeConnectionStore connectionStore;
     private FakeCredentialsPort credentialsPort;
@@ -121,8 +152,9 @@ class WithingsOAuthAdapterTest {
         connectionStore = new FakeConnectionStore();
         credentialsPort = new FakeCredentialsPort();
         stateCodec = new WithingsStateCodec("test-callback-secret");
+        settingsPort = new FakeSettingsPort();
         adapter = new WithingsOAuthAdapter(properties, JsonMapper.builder().build(),
-                connectionStore, credentialsPort, Clock.fixed(Instant.parse("2026-03-30T12:00:00Z"), ZoneOffset.UTC));
+                connectionStore, credentialsPort, settingsPort, Clock.fixed(Instant.parse("2026-03-30T12:00:00Z"), ZoneOffset.UTC));
     }
 
     @AfterEach
@@ -161,5 +193,29 @@ class WithingsOAuthAdapterTest {
     void stateCodecRoundTrips() {
         var id = UUID.randomUUID();
         assertEquals(id, stateCodec.verify(stateCodec.issue(id)));
+    }
+
+    @Test
+    void userSuppliedCredentialsOverrideEnvironment() {
+        settingsPort.save("withings", java.util.Map.of("clientId", "user-client-id", "clientSecret", "user-secret"));
+
+        AuthorizationInit init = adapter.startAuthorization();
+
+        org.junit.jupiter.api.Assertions.assertTrue(init.authorizationUrl().contains("client_id=user-client-id"),
+                "authorize URL must use the user-supplied client id");
+    }
+
+    @Test
+    void missingCredentialsFailWithClearMessage() {
+        var emptyProps = new WithingsProperties();
+        emptyProps.setBaseUrl("http://localhost:" + wireMock.port());
+        emptyProps.setAuthorizeUrl("https://vendor.example/authorize");
+        emptyProps.setCallbackSecret("test-callback-secret");
+        emptyProps.setRedirectUri("http://localhost:8080/callback");
+        var noCreds = new WithingsOAuthAdapter(emptyProps, JsonMapper.builder().build(),
+                connectionStore, credentialsPort, new FakeSettingsPort(), Clock.fixed(Instant.parse("2026-03-30T12:00:00Z"), ZoneOffset.UTC));
+
+        var ex = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, noCreds::startAuthorization);
+        org.junit.jupiter.api.Assertions.assertTrue(ex.getMessage().contains("clientId"));
     }
 }
