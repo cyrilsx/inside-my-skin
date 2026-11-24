@@ -6,11 +6,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
 @Service
 public class ConnectionService {
+
+    private static final Logger log = LoggerFactory.getLogger(ConnectionService.class);
 
     private static final Pattern CREDENTIAL_KEY = Pattern.compile("[A-Za-z0-9_.-]{1,64}");
     private static final int MAX_ENTRIES = 16;
@@ -69,6 +73,8 @@ public class ConnectionService {
             }
         }
         settingsPort.save(provider, credentials);
+        // key names only — values are secrets and must never be logged
+        log.info("provider credentials saved: provider={} keys={}", provider, credentials.keySet().stream().sorted().toList());
     }
 
     public CredentialsStatus credentialsStatus(String provider) {
@@ -79,13 +85,16 @@ public class ConnectionService {
     public void deleteCredentials(String provider) {
         requireKnownProvider(provider);
         settingsPort.delete(provider);
+        log.info("provider credentials deleted: provider={}", provider);
     }
 
     public AuthorizationInit startAuthorization(String provider) {
+        log.info("oauth authorization started: provider={}", provider);
         return oauthPort(provider).startAuthorization();
     }
 
     public ConnectionInfo connect(String provider) {
+        log.info("connecting key-based provider: {}", provider);
         var oauthBased = oauthPorts.stream().anyMatch(p -> p.provider().equals(provider));
         if (oauthBased) {
             throw new IllegalArgumentException("provider " + provider + " requires OAuth; use /authorize");
@@ -95,6 +104,8 @@ public class ConnectionService {
     }
 
     public ConnectionInfo handleCallback(String provider, String code, String state) {
+        // never log code/state — they are bearer material
+        log.info("oauth callback received: provider={}", provider);
         return oauthPort(provider).handleCallback(code, state);
     }
 
@@ -103,10 +114,11 @@ public class ConnectionService {
     }
 
     public void revoke(UUID connectionId) {
-        connectionStore.find(connectionId)
+        var connection = connectionStore.find(connectionId)
                 .orElseThrow(() -> new IllegalArgumentException("unknown connection: " + connectionId));
         credentialsPort.revoke(connectionId);
         connectionStore.delete(connectionId);
+        log.info("connection revoked: id={} provider={}", connectionId, connection.provider());
     }
 
     public void handleWebhook(String provider, JsonNode body) {
@@ -115,6 +127,7 @@ public class ConnectionService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("unknown webhook provider: " + provider))
                 .handle(body);
+        log.info("webhook received: provider={}", provider);
     }
 
     private void requireKnownProvider(String provider) {

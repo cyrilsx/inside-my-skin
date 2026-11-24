@@ -13,6 +13,8 @@ import dev.healthhub.core.MetricType;
 import dev.healthhub.core.MoodCheckinRecord;
 import dev.healthhub.core.Source;
 import dev.healthhub.core.UsageDailyRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import dev.healthhub.ingestion.ConnectionStore;
 import dev.healthhub.ingestion.IngestOutcome;
 import dev.healthhub.ingestion.IngestionService;
@@ -27,6 +29,9 @@ import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class CompanionIngestService {
+
+    private static final Logger log = LoggerFactory.getLogger(CompanionIngestService.class);
+
 
     private static final String COMPANION_PROVIDER = "health_connect";
 
@@ -64,9 +69,13 @@ public class CompanionIngestService {
                 }
             } catch (Exception e) {
                 rejected++;
-                results.add(new IngestItemResultDto(item.clientId(), "REJECTED", e.getMessage()));
+                // never propagate e.getMessage(): item payloads (and Jackson excerpts of them) must not
+                // leak into logs or responses
+                log.warn("companion item rejected: clientId={} reason={}", item.clientId(), e.getClass().getSimpleName());
+                results.add(new IngestItemResultDto(item.clientId(), "REJECTED", "rejected"));
             }
         }
+        log.info("companion batch ingested: items={} accepted={} duplicates={} rejected={}", batch.items().size(), accepted, duplicates, rejected);
         return new IngestResultDto(accepted, duplicates, rejected, results);
     }
 

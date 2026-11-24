@@ -40,6 +40,7 @@ public class SyncOrchestrator {
                 .orElseThrow(() -> new IllegalStateException("no sync port for provider " + connection.provider()));
         var since = connection.lastSyncAt() != null ? connection.lastSyncAt() : Instant.EPOCH;
         var startedAt = Instant.now(clock);
+        log.info("sync started: connection={} provider={}", connectionId, connection.provider());
         try {
             var records = syncPort.fetch(connectionId, since);
             int ingested = 0;
@@ -54,7 +55,9 @@ public class SyncOrchestrator {
                     ingested++;
                 }
             }
-            var finishedAt = Instant.now(clock);
+                var finishedAt = Instant.now(clock);
+            log.info("sync completed: connection={} provider={} fetched={} ingested={} duplicates={}", connectionId,
+                    connection.provider(), records.size(), ingested, duplicates);
             var syncResult = new SyncResult(connectionId, records.size(), ingested, duplicates, finishedAt);
             var entry = new SyncAuditEntry(connectionId, connection.provider(), startedAt, finishedAt,
                     "OK", records.size(), ingested, duplicates, null);
@@ -65,7 +68,7 @@ public class SyncOrchestrator {
             return syncResult;
         } catch (Exception e) {
             var finishedAt = Instant.now(clock);
-            log.error("Sync failed for connection {}", connectionId, e);
+            log.error("sync failed: connection={} provider={}", connectionId, connection.provider(), e);
             var entry = new SyncAuditEntry(connectionId, connection.provider(), startedAt, finishedAt,
                     "FAILED", 0, 0, 0, e.getMessage());
             auditStore.record(entry);

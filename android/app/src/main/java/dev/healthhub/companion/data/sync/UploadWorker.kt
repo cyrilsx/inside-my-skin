@@ -7,6 +7,7 @@ import dev.healthhub.companion.api.models.IngestBatch
 import dev.healthhub.companion.data.SettingsRepository
 import dev.healthhub.companion.data.api.ApiFactory
 import dev.healthhub.companion.data.local.PendingUploadDao
+import dev.healthhub.companion.util.SafeLog
 import kotlinx.coroutines.flow.first
 
 class UploadWorker(
@@ -19,9 +20,11 @@ class UploadWorker(
     override suspend fun doWork(): Result {
         val pending = dao.pending(limit = 500)
         if (pending.isEmpty()) return Result.success()
+        SafeLog.i(TAG, "upload batch started: items=${pending.size}")
 
         val baseUrl = settings.apiBaseUrl.first()
         if (baseUrl.isBlank() || settings.deviceToken.isBlank()) {
+            SafeLog.w(TAG, "upload skipped: not configured")
             return Result.retry()
         }
 
@@ -38,10 +41,17 @@ class UploadWorker(
                 .map { it.clientId.toString() }
             if (acceptedOrDuplicate.isNotEmpty()) dao.deleteByClientIds(acceptedOrDuplicate)
             if (rejected.isNotEmpty()) dao.markFailed(rejected)
+            SafeLog.i(TAG, "upload done: acceptedOrDuplicate=${acceptedOrDuplicate.size} rejected=${rejected.size}")
             Result.success()
         } catch (e: Exception) {
+            // never log the batch payload or the token; class name only
+            SafeLog.e(TAG, "upload failed", e)
             Result.retry()
         }
+    }
+
+    companion object {
+        private const val TAG = "UploadWorker"
     }
 
 }

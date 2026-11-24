@@ -34,10 +34,12 @@ public class DeletionService {
     }
 
     public DeletionJob requestDeletion() {
+        log.info("deletion requested");
         return jobStore.save(new DeletionJob(UUID.randomUUID(), "PENDING", Instant.now(clock), null));
     }
 
     public void executeDeletion(UUID jobId) {
+        log.info("deletion job started: id={}", jobId);
         jobStore.updateStatus(jobId, "RUNNING", null);
         try {
             writePort.deleteAll();
@@ -46,9 +48,10 @@ public class DeletionService {
             connectionStore.deleteAll();
             var completedAt = Instant.now(clock);
             jobStore.updateStatus(jobId, "COMPLETED", completedAt);
+            log.info("deletion job completed: id={}", jobId);
             publishDeletion(jobId, "COMPLETED", null, completedAt);
         } catch (Exception e) {
-            log.error("Deletion job {} failed", jobId, e);
+            log.error("deletion job failed: id={}", jobId, e);
             var failedAt = Instant.now(clock);
             jobStore.updateStatus(jobId, "FAILED", failedAt);
             publishDeletion(jobId, "FAILED", e.getMessage(), failedAt);
