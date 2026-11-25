@@ -1,0 +1,32 @@
+# Production profile (SPRING_PROFILES_ACTIVE=prod). Secrets come only from env vars.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  # Jelastic / reverse proxies terminate TLS; trust forwarded headers so HSTS + https redirects work
+  forward-headers-strategy: framework
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    defaults:
+      enabled: true
+
+logging:
+  level:
+    dev.healthhub: INFO
+
+springdoc:
+  swagger-ui:
+    enabled: true

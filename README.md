@@ -126,6 +126,15 @@ WITHINGS_CLIENT_SECRET=
 WITHINGS_CALLBACK_SECRET=
 ```
 
+## Deployment (Infomaniak Cloud)
+
+One Docker image serves the backend **and** the built dashboard same-origin; PostgreSQL runs alongside. CI builds and pushes `ghcr.io/cyrilsx/inside-my-skin` on every `main` push.
+
+- **Infomaniak Public Cloud (Jelastic PaaS)**: import `infra/infomaniak/manifest.jps` — one docker node + managed PostgreSQL 17, secrets as env vars, Let's Encrypt via custom domain.
+- **Infomaniak Cloud Server (VM)**: `cp .env.prod.example .env.prod` (chmod 600, never commit), then `docker compose -f infra/docker-compose.prod.yml up -d --build`, with Caddy/nginx in front for TLS.
+
+Full step-by-step, secrets checklist and ops (logs, backups, upgrades, rollback): [docs/deployment/infomaniak.md](docs/deployment/infomaniak.md). Local dev: `./scripts/dev.sh`.
+
 ## Privacy and data handling
 
 Health and mental data is the most sensitive category you can store. This project treats it accordingly, as architecture rather than ceremony:

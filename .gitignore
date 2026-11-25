@@ -27,6 +27,7 @@ android/local.properties
 # Environment and secrets
 .env
 .env.*
+!.env.prod.example
 !.env.example
 
 # Docker
