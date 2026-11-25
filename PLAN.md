@@ -81,7 +81,10 @@ DELETE /api/v1/data                  # async deletion
 Prerequisites: JDK 25, Node 22, Docker, Android Studio (for the companion app).
 
 ```
-# backend (PostgreSQL lives in infra/docker-compose.yml; POSTGRES_PASSWORD is required)
+# everything at once: postgres + backend (:8080) + frontend (:5173)
+./scripts/dev.sh            # Ctrl+C stops all; --down also stops postgres, --no-db uses your own DATABASE_URL
+
+# or step by step (PostgreSQL lives in infra/docker-compose.yml; POSTGRES_PASSWORD is required)
 POSTGRES_PASSWORD=change-me docker compose -f infra/docker-compose.yml up -d postgres
 ./mvnw install -DskipTests               # builds all backend modules into ~/.m2
 ./mvnw -pl backend/app spring-boot:run    # app + migrations + actuator on :8080
@@ -138,6 +141,7 @@ Health and mental data is the most sensitive category you can store. This projec
 | M10 | Per-user provider credentials via authenticated API, stored AES-GCM encrypted (env = fallback/master keys); providers addable dynamically | Done |
 | M11 | Observability: structured request/service logs with mandatory redaction — no secrets or tokens ever logged | Done |
 | M12 | Docs review: README/PLAN/AGENTS fixed (compose path, Maven run sequence, roadmap, env vars, overclaims) | Done |
+| M13 | One-command local dev: scripts/dev.sh (Postgres + backend + frontend), Vite dev proxy to :8080, gitignored .dev-env for local secrets | Done |
 
 Detailed, acceptance-criteria per task, is in the build plan for AI agents, alongside the decision records that lock the architecture.
 
