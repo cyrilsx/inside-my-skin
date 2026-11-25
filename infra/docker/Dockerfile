@@ -14,7 +14,8 @@ WORKDIR /ui
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
-COPY docs/openapi.yaml docs/openapi.yaml
+# openapi-ts.config.ts reads ../docs/openapi.yaml relative to frontend/
+COPY docs/openapi.yaml /docs/openapi.yaml
 RUN npm run build
 
 FROM eclipse-temurin:25-jre
