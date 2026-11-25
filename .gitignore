@@ -26,6 +26,8 @@ android/local.properties
 
 # Environment and secrets
 .env
+.dev-env
+logs/
 .env.*
 !.env.example
 

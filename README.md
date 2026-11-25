@@ -90,7 +90,10 @@ POST   /api/v1/webhooks/{provider}              # vendor webhooks (X-Webhook-Sec
 Prerequisites: JDK 25, Node 22, Docker, Android Studio (for the companion app).
 
 ```
-# backend (PostgreSQL lives in infra/docker-compose.yml; POSTGRES_PASSWORD is required)
+# everything at once: postgres + backend (:8080) + frontend (:5173)
+./scripts/dev.sh            # Ctrl+C stops all; --down also stops postgres, --no-db uses your own DATABASE_URL
+
+# or step by step (PostgreSQL lives in infra/docker-compose.yml; POSTGRES_PASSWORD is required)
 POSTGRES_PASSWORD=change-me docker compose -f infra/docker-compose.yml up -d postgres
 ./mvnw install -DskipTests               # builds all backend modules into ~/.m2
 ./mvnw -pl backend/app spring-boot:run    # app + migrations + actuator on :8080

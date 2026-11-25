@@ -34,6 +34,12 @@ export default defineConfig({
       }
     }
   ],
+  server: {
+    // dev server proxies the API to the local backend so the SPA stays same-origin
+    proxy: {
+      '/api': { target: process.env.HEALTHHUB_API_URL ?? 'http://localhost:8080', changeOrigin: true }
+    }
+  },
   test: {
     environment: 'jsdom',
     globals: true
