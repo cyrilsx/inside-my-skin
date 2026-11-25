@@ -138,6 +138,8 @@ Health and mental data is the most sensitive category you can store. This projec
 | M10 | Per-user provider credentials via authenticated API, stored AES-GCM encrypted (env = fallback/master keys); providers addable dynamically | Done |
 | M11 | Observability: structured request/service logs with mandatory redaction — no secrets or tokens ever logged | Done |
 | M12 | Docs review: README/PLAN/AGENTS fixed (compose path, Maven run sequence, roadmap, env vars, overclaims) | Done |
+| M13 | One-command local dev: scripts/dev.sh (Postgres + backend + frontend), Vite dev proxy to :8080, gitignored .dev-env for local secrets | Done |
+| M14 | Production deployment on Infomaniak Cloud: Docker image (backend+SPA), prod compose, prod profile, security headers, Jelastic/Cloud-Server guide, GHCR build in CI | Done |
 
 Detailed, acceptance-criteria per task, is in the build plan for AI agents, alongside the decision records that lock the architecture.
 
