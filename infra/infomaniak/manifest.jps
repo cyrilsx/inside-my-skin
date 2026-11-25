@@ -1,0 +1,66 @@
+# Jelastic (Infomaniak Public Cloud) one-click install manifest for HealthHub.
+# Import in the Jelastic dashboard: Marketplace → "Install" → paste/import this manifest,
+# or use it as the reference for creating the environment manually.
+# Topology: one Docker node running ghcr.io/cyrilsx/inside-my-skin (built by CI on main)
+# + one managed PostgreSQL node. All secrets are injected as environment variables
+# (Jelastic stores them encrypted) — never bake them into the image.
+jpsType: install
+jpsVersion: "8.0"
+name: HealthHub
+logo: https://raw.githubusercontent.com/cyrilsx/inside-my-skin/main/frontend/public/vite.svg
+description: Personal health/wellbeing aggregation platform (Spring Boot + Vue + PostgreSQL)
+homepage: https://github.com/cyrilsx/inside-my-skin
+
+settings:
+  # fill these in the Jelastic UI after install (or via `${...}` placeholders when importing)
+  fields:
+    - caption: JWT_SIGNING_KEY (base64, 256-bit)
+      type: string
+      required: true
+      name: JWT_SIGNING_KEY
+    - caption: TOKEN_ENCRYPTION_KEY (base64, 256-bit)
+      type: string
+      required: true
+      name: TOKEN_ENCRYPTION_KEY
+    - caption: WEBHOOK_SECRET
+      type: string
+      required: true
+      name: WEBHOOK_SECRET
+    - caption: Withings redirect URI (https://<your-env>.infomaniak.cloud/connect/withings/callback)
+      type: string
+      name: WITHINGS_REDIRECT_URI
+
+environment:
+  topology:
+    nodes:
+      - nodeType: docker
+        nodeGroup: app
+        image: ghcr.io/cyrilsx/inside-my-skin:latest
+        env:
+          SPRING_PROFILES_ACTIVE: prod
+          JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
+          TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+          WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+          DATABASE_URL: jdbc:postgresql://${nodes.postgres.address}:5432/healthhub
+          POSTGRES_USER: healthhub
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+          SYNC_ENABLED: "true"
+          # provider credentials: prefer the dashboard Sources UI (encrypted at rest);
+          # env fallback below
+          GARMIN_ENABLED: "false"
+          WITHINGS_ENABLED: "false"
+          WITHINGS_REDIRECT_URI: ${WITHINGS_REDIRECT_URI}
+        ports:
+          - 8080
+        scalingMode: stateless
+        diskLimit: 10 GB
+        cloudlets: 8
+      - nodeType: postgres
+        nodeGroup: postgres
+        version: "17"
+        diskLimit: 10 GB
+        cloudlets: 4
+
+actions:
+  onInstall:
+    - cmd [app]: echo "HealthHub installed. Set a custom domain + Let's Encrypt SSL in the Jelastic dashboard (Settings → Custom domains), then open https://<your-domain>/"
